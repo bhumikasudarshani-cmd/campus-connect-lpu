@@ -172,12 +172,30 @@ export function parseMaterialFileMetadata(
 export type MaterialCategory = 'PDF' | 'PPT' | 'EXTERNAL_LINK' | 'ARCHIVE' | 'IMAGE' | 'OTHER';
 
 /**
+ * Checks if a URL specifically targets a Google Drive folder
+ */
+export function isGoogleDriveFolder(url: string | null | undefined): boolean {
+  if (!url || typeof url !== 'string') return false;
+  const clean = url.trim().toLowerCase();
+  return clean.includes('drive.google.com') && (clean.includes('/folders/') || clean.includes('id=folders'));
+}
+
+/**
+ * Checks if a URL points to a specific Google Drive single file
+ */
+export function isGoogleDriveFile(url: string | null | undefined): boolean {
+  if (!url || typeof url !== 'string') return false;
+  if (isGoogleDriveFolder(url)) return false;
+  return Boolean(extractDriveFileId(url));
+}
+
+/**
  * Accurately categorizes any study material into one of 6 exact types:
  * - PDF: Standard study documents, books, notes, PYQs (previewable in Canvas viewer)
  * - PPT: PowerPoint presentation files (.ppt, .pptx, etc.)
  * - EXTERNAL_LINK: External resource URLs, Google Drive folder links, Resource Links
  * - ARCHIVE: Compressed containers (.zip, .rar, .7z, etc.)
- * - IMAGE: Visual images (.png, .jpg, .jpeg, .webp, .svg, etc.)
+ * - IMAGE: Visual images (.png, .jpg, .jpeg, .webp, .svg, .img, etc.)
  * - OTHER: Word docs, spreadsheets, or unsupported binaries
  */
 export function getMaterialCategory(material: {
@@ -215,15 +233,16 @@ export function getMaterialCategory(material: {
     } catch {}
   }
 
-  // 2. EXTERNAL_LINK: Link Uploads, Google Drive Folders, external links
-  const isDriveFolder = url.includes('drive.google.com') && url.includes('/folders/');
+  // 2. Google Drive FOLDERS are external links (cannot be previewed as single files)
+  if (isGoogleDriveFolder(url)) {
+    return 'EXTERNAL_LINK';
+  }
+
+  // 3. Genuine external resource links (web pages, documentation, link resources)
   const isExternalResource =
-    size === 'Google Drive' ||
     size === 'Resource Link' ||
     mime === 'text/uri-list' ||
-    mime === 'text/html' ||
     matType === 'link' ||
-    isDriveFolder ||
     name.includes('resource link') ||
     title.includes('resource link') ||
     (url.startsWith('http') &&
@@ -231,60 +250,54 @@ export function getMaterialCategory(material: {
       !url.includes('docs.google.com') &&
       !url.includes('/study-materials/') &&
       !url.includes('/uploads/') &&
-      !url.endsWith('.pdf') &&
-      !url.includes('.pdf?'));
+      !/\.(pdf|png|jpg|jpeg|webp|svg|gif|bmp|img|ppt|pptx|zip|rar|7z|doc|docx)($|\?)/i.test(url));
 
   if (isExternalResource) {
     return 'EXTERNAL_LINK';
   }
 
-  // 3. ARCHIVE: ZIP, RAR, 7Z, TAR, GZ, ISO
-  const archiveExts = ['.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz', '.tgz', '.iso'];
-  const isArchive =
-    archiveExts.some((ext) => name.endsWith(ext) || url.includes(ext)) ||
-    mime.includes('zip') ||
-    mime.includes('compressed') ||
-    mime.includes('archive') ||
-    mime.includes('x-rar') ||
-    mime.includes('x-7z') ||
-    title.endsWith('.zip') ||
-    title.endsWith('.rar') ||
-    title.endsWith('.7z') ||
-    /\b(zip|rar|7z|archive)\b/i.test(title);
-
-  if (isArchive) {
-    return 'ARCHIVE';
-  }
-
-  // 4. PPT / PPTX: Presentation slides
-  const pptExts = ['.ppt', '.pptx', '.pps', '.ppsx', '.odp'];
-  const isPpt =
-    pptExts.some((ext) => name.endsWith(ext) || url.includes(ext)) ||
-    mime.includes('powerpoint') ||
-    mime.includes('presentation') ||
-    mime.includes('presentationml') ||
-    title.endsWith('.ppt') ||
-    title.endsWith('.pptx') ||
-    /\b(ppts?|slides|powerpoint)\b/i.test(title);
-
-  if (isPpt) {
-    return 'PPT';
-  }
-
-  // 5. IMAGE: PNG, JPG, JPEG, WEBP, SVG, GIF
-  const imgExts = ['.png', '.jpg', '.jpeg', '.webp', '.svg', '.gif'];
+  // 4. IMAGE: PNG, JPG, JPEG, WEBP, SVG, GIF, BMP, IMG
+  const imgExts = ['.png', '.jpg', '.jpeg', '.webp', '.svg', '.gif', '.bmp', '.img'];
   const isImg =
-    imgExts.some((ext) => name.endsWith(ext) || url.endsWith(ext)) ||
+    imgExts.some((ext) => name.endsWith(ext) || url.includes(ext) || title.endsWith(ext)) ||
     mime.startsWith('image/');
 
   if (isImg) {
     return 'IMAGE';
   }
 
-  // 6. OTHER non-previewable docs: Word, Excel, Executables
+  // 5. PPT / PPTX: Presentation slides
+  const pptExts = ['.ppt', '.pptx', '.pps', '.ppsx', '.odp'];
+  const isPpt =
+    pptExts.some((ext) => name.endsWith(ext) || url.includes(ext) || title.endsWith(ext)) ||
+    mime.includes('powerpoint') ||
+    mime.includes('presentation') ||
+    mime.includes('presentationml') ||
+    /\b(ppts?|slides|powerpoint)\b/i.test(title);
+
+  if (isPpt) {
+    return 'PPT';
+  }
+
+  // 6. ARCHIVE: ZIP, RAR, 7Z, TAR, GZ, ISO
+  const archiveExts = ['.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz', '.tgz', '.iso'];
+  const isArchive =
+    archiveExts.some((ext) => name.endsWith(ext) || url.includes(ext) || title.endsWith(ext)) ||
+    mime.includes('zip') ||
+    mime.includes('compressed') ||
+    mime.includes('archive') ||
+    mime.includes('x-rar') ||
+    mime.includes('x-7z') ||
+    /\b(zip|rar|7z|archive)\b/i.test(title);
+
+  if (isArchive) {
+    return 'ARCHIVE';
+  }
+
+  // 7. OTHER non-previewable docs: Word, Excel, Executables
   const otherDocExts = ['.doc', '.docx', '.xls', '.xlsx', '.csv', '.apk', '.exe', '.msi', '.bin'];
   const isOtherDoc =
-    otherDocExts.some((ext) => name.endsWith(ext) || url.includes(ext)) ||
+    otherDocExts.some((ext) => name.endsWith(ext) || url.includes(ext) || title.endsWith(ext)) ||
     mime.includes('word') ||
     mime.includes('spreadsheet') ||
     mime.includes('excel');
@@ -293,13 +306,13 @@ export function getMaterialCategory(material: {
     return 'OTHER';
   }
 
-  // 7. Default to PDF for standard study materials
+  // 8. Default to PDF for standard study materials
   return 'PDF';
 }
 
 /**
- * Checks whether a material can be rendered in the in-browser DocumentViewer (Canvas PDF, Images).
- * Files such as .zip, .rar, .7z, .ppt, .pptx, or external links return FALSE.
+ * Checks whether a material can be rendered in the in-browser DocumentViewer
+ * (PDF Canvas, Images, and Google Drive PPT embeds).
  */
 export function isMaterialPreviewable(material: {
   file_url?: string;
@@ -311,7 +324,12 @@ export function isMaterialPreviewable(material: {
 }): boolean {
   if (!material) return false;
   const category = getMaterialCategory(material);
-  return category === 'PDF' || category === 'IMAGE';
+  if (category === 'PDF' || category === 'IMAGE') return true;
+  if (category === 'PPT') {
+    const driveId = extractDriveFileId(material.file_url);
+    return Boolean(driveId);
+  }
+  return false;
 }
 
 /**

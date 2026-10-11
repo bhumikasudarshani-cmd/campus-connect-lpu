@@ -19,7 +19,7 @@ interface SessionPayload {
 }
 
 // Set to true to temporarily pause the site for maintenance and updates
-const MAINTENANCE_MODE = true;
+const MAINTENANCE_MODE = false;
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

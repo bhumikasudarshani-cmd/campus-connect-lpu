@@ -28,7 +28,14 @@ import {
   Minimize2
 } from 'lucide-react';
 import { Material } from '@/lib/db/types';
-import { isMaterialPreviewable, parseFileSizeToMb, getMaterialCategory, MaterialCategory } from '@/lib/drive-service';
+import { 
+  isMaterialPreviewable, 
+  parseFileSizeToMb, 
+  getMaterialCategory, 
+  getDrivePreviewUrl,
+  isGoogleDriveFolder,
+  MaterialCategory 
+} from '@/lib/drive-service';
 import { getMaterialFileFormat } from '@/components/MaterialCard';
 
 interface DocumentViewerModalProps {
@@ -465,34 +472,6 @@ export default function DocumentViewerModal({
   const activeFileUrl = activeFile?.url || material?.file_url || '';
   const activeFileSizeStr = activeFile?.size || material?.file_size || '';
 
-  const isPreviewable = useMemo(() => {
-    if (!material) return true;
-    if (isArchiveType) return false;
-    return isMaterialPreviewable({
-      file_name: activeFileName,
-      file_url: activeFileUrl,
-      title: material.title,
-      mime_type: material.mime_type,
-      material_type: material.material_type,
-      file_size: activeFileSizeStr,
-    });
-  }, [material, isArchiveType, activeFileName, activeFileUrl, activeFileSizeStr]);
-
-  const fileFormat = useMemo(() => {
-    return material ? getMaterialFileFormat({
-      file_name: activeFileName,
-      file_url: activeFileUrl,
-      mime_type: material.mime_type
-    }) : { type: 'pdf' as const, label: 'PDF', ext: '.pdf', icon: FileText, badgeClass: '' };
-  }, [material, activeFileName, activeFileUrl]);
-
-  const isGlobalDownloadsEnabled = serverAllowDownloads !== null 
-    ? serverAllowDownloads 
-    : (allowDownloads === false ? false : Boolean(allowDownloads));
-
-  // STRICT ACCESS CONTROL: When downloads are globally off, NO download is allowed and NO download button is rendered.
-  const canDownload = Boolean(isGlobalDownloadsEnabled);
-
   // Helper to extract Google Drive file or folder IDs
   const extractDriveId = useCallback((url: string | null | undefined): string | null => {
     if (!url || typeof url !== 'string') return null;
@@ -510,13 +489,48 @@ export default function DocumentViewerModal({
     return null;
   }, [activeFile?.drive_file_id]);
 
+  const isPreviewable = useMemo(() => {
+    if (!material) return true;
+    if (isArchiveType) return false;
+    const cat = getMaterialCategory({
+      file_name: activeFileName,
+      file_url: activeFileUrl,
+      title: material.title,
+      mime_type: material.mime_type,
+      material_type: material.material_type,
+      file_size: activeFileSizeStr,
+    });
+    if (cat === 'PDF' || cat === 'IMAGE') return true;
+    if (cat === 'PPT') {
+      const driveId = activeFile?.drive_file_id || extractDriveId(activeFileUrl || material.file_url);
+      return Boolean(driveId || driveEmbedUrl);
+    }
+    return false;
+  }, [material, isArchiveType, activeFileName, activeFileUrl, activeFileSizeStr, activeFile?.drive_file_id, extractDriveId, driveEmbedUrl]);
+
+  const fileFormat = useMemo(() => {
+    return material ? getMaterialFileFormat({
+      file_name: activeFileName,
+      file_url: activeFileUrl,
+      mime_type: material.mime_type
+    }) : { type: 'pdf' as const, label: 'PDF', ext: '.pdf', icon: FileText, badgeClass: '' };
+  }, [material, activeFileName, activeFileUrl]);
+
+  const isGlobalDownloadsEnabled = serverAllowDownloads !== null 
+    ? serverAllowDownloads 
+    : (allowDownloads === false ? false : Boolean(allowDownloads));
+
+  // STRICT ACCESS CONTROL: When downloads are globally off, NO download is allowed and NO download button is rendered for students. Admins/owners retain full access.
+  const canDownload = Boolean(isAdminOrOwner || isGlobalDownloadsEnabled);
+
   // Robust, authorized download handler strictly routed through server-side access control
   const handleDownloadActiveFile = useCallback((e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
       e.preventDefault();
     }
-    if (!material || !canDownload) return;
+    if (!material) return;
+    if (!canDownload && isPreviewable) return;
 
     if (onDownload) {
       try {
@@ -786,14 +800,28 @@ export default function DocumentViewerModal({
         if (category === 'EXTERNAL_LINK') {
           clearTimeout(timeoutId);
           setExternalLinkUrl(targetUrl);
+          if (isGoogleDriveFolder(targetUrl)) {
+            setIsDriveResource(true);
+          }
           lastLoadedKeyRef.current = currentDocKey;
           setLoading(false);
           return;
         }
 
-        // 2. Non-Previewables: PPT, ZIP, RAR, 7Z, and unsupported documents
+        // 2. PPT / PPTX: Presentation slides
+        if (category === 'PPT') {
+          clearTimeout(timeoutId);
+          if (driveId) {
+            setDriveEmbedUrl(getDrivePreviewUrl(driveId));
+          }
+          lastLoadedKeyRef.current = currentDocKey;
+          setLoading(false);
+          return;
+        }
+
+        // 3. Non-Previewables: ZIP, RAR, 7Z, and unsupported documents
         // Instantly unblock viewer with native clean card (0ms, zero network delay)
-        if (category === 'PPT' || category === 'ARCHIVE' || category === 'OTHER') {
+        if (category === 'ARCHIVE' || category === 'OTHER') {
           clearTimeout(timeoutId);
           if (category === 'ARCHIVE') setIsArchiveType(true);
           lastLoadedKeyRef.current = currentDocKey;
@@ -801,11 +829,14 @@ export default function DocumentViewerModal({
           return;
         }
 
-        // 3. Images: Render in image viewer
+        // 4. Images: Render in image viewer
         if (category === 'IMAGE') {
           clearTimeout(timeoutId);
           setIsImageType(true);
-          setPreviewBlobUrl(driveId ? `https://lh3.googleusercontent.com/d/${driveId}` : targetUrl);
+          const previewQuery = multiFiles.length > 0 
+            ? `?fileIndex=${activeFileIndex}&stream=true` 
+            : '?stream=true';
+          setPreviewBlobUrl(`/api/materials/${material.id}/preview${previewQuery}`);
           lastLoadedKeyRef.current = currentDocKey;
           setLoading(false);
           return;
@@ -1459,21 +1490,13 @@ export default function DocumentViewerModal({
                   </span>
                 )}
               </div>
-              {canDownload ? (
-                <button
-                  onClick={handleDownloadActiveFile}
-                  className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-lpu-600 to-amber-500 hover:from-lpu-700 hover:to-amber-600 text-white font-bold text-sm shadow-xl shadow-orange-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Download File ({activeFileSizeStr || fileFormat.label})</span>
-                </button>
-              ) : (
-                <div className="bg-slate-950/80 rounded-2xl p-4 border border-slate-800 text-center">
-                  <p className="text-xs text-amber-400 font-medium">
-                    Downloads are currently disabled by administration for this file type.
-                  </p>
-                </div>
-              )}
+              <button
+                onClick={handleDownloadActiveFile}
+                className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-lpu-600 to-amber-500 hover:from-lpu-700 hover:to-amber-600 text-white font-bold text-sm shadow-xl shadow-orange-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download File ({activeFileSizeStr || fileFormat.label})</span>
+              </button>
             </div>
           ) : externalLinkUrl ? (
             <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 sm:p-12 max-w-lg text-center mx-auto my-auto shadow-2xl animate-in zoom-in-95 duration-200">
@@ -1510,13 +1533,13 @@ export default function DocumentViewerModal({
                 <ExternalLink className="w-8 h-8 text-amber-400" />
               </div>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-950/80 text-[11px] font-bold text-amber-300 border border-amber-800 mb-3">
-                Google Drive Resource
+                Google Drive Folder
               </span>
               <h3 className="text-lg sm:text-xl font-bold text-white mb-2 leading-snug">
                 {activeFileName || material.title}
               </h3>
               <p className="text-xs text-slate-400 mb-6 max-w-md mx-auto leading-relaxed">
-                This study resource is hosted on Google Drive. Open in a new tab for 100% full access to all subjects, folders, PYQs, and notes.
+                Google Drive folders cannot be previewed in-app. Open in Google Drive to view all files, notes, and folders.
               </p>
               
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -1536,16 +1559,6 @@ export default function DocumentViewerModal({
                   <span>Open in Google Drive (New Tab)</span>
                   <ExternalLink className="w-4 h-4" />
                 </a>
-
-                {canDownload && (
-                  <button
-                    onClick={handleDownloadActiveFile}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-bold text-sm border border-slate-700 transition-all cursor-pointer"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>Download Files</span>
-                  </button>
-                )}
               </div>
             </div>
           ) : error ? (

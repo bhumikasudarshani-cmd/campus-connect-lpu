@@ -54,8 +54,19 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }
 
     // SERVER-SIDE ACCESS CONTROL:
-    // When allow_user_downloads = false and user is not admin/owner, downloads are strictly forbidden.
-    if (!settings.allow_user_downloads && !isAdminOrOwner) {
+    // When allow_user_downloads = false and user is not admin/owner,
+    // previewable documents (PDF, image, Drive PPT) are strictly restricted to Preview mode.
+    // However, non-previewable files (DOC, DOCX, ZIP, RAR, other binaries) can only be accessed via download.
+    const isPreviewable = isMaterialPreviewable({
+      file_url: targetFileUrl,
+      file_name: material.file_name,
+      title: material.title,
+      mime_type: material.mime_type,
+      material_type: material.material_type,
+      file_size: targetFileSize,
+    });
+
+    if (!settings.allow_user_downloads && !isAdminOrOwner && isPreviewable) {
       return NextResponse.json(
         {
           error: 'Document downloads are currently disabled by administration. You can view previewable documents in Preview mode.',

@@ -19,7 +19,7 @@ import {
   ExternalLink 
 } from 'lucide-react';
 import { Material } from '@/lib/db/types';
-import { isMaterialPreviewable, getMaterialCategory } from '@/lib/drive-service';
+import { isMaterialPreviewable, getMaterialCategory, isGoogleDriveFolder } from '@/lib/drive-service';
 
 export function getMaterialFileFormat(material: {
   file_name?: string | null;
@@ -41,7 +41,8 @@ export function getMaterialFileFormat(material: {
     return { type: 'image' as const, label: 'Images', badgeClass: 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200/90 dark:border-emerald-800/80', icon: FileText, ext: '.jpg' };
   }
   if (category === 'EXTERNAL_LINK') {
-    return { type: 'doc' as const, label: 'Resource Link', badgeClass: 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-200/90 dark:border-amber-800/80', icon: ExternalLink, ext: '' };
+    const isFolder = isGoogleDriveFolder(material.file_url);
+    return { type: 'doc' as const, label: isFolder ? 'Drive Folder' : 'Resource Link', badgeClass: 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-200/90 dark:border-amber-800/80', icon: ExternalLink, ext: '' };
   }
   const name = (material.file_name || material.title || '').toLowerCase();
   if (name.endsWith('.docx') || name.endsWith('.doc') || (material.mime_type || '').includes('word')) {
@@ -88,30 +89,11 @@ export default function MaterialCard({
   const [downloadCount, setDownloadCount] = useState(material.download_count);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
 
-  const isDirectDriveLink = Boolean(
-    material.file_url &&
-    !material.file_url.startsWith('[') &&
-    material.file_size === 'Google Drive'
-  );
-
-  const isDirectResourceLink = Boolean(
-    material.file_url &&
-    !material.file_url.startsWith('[') &&
-    (material.file_size === 'Resource Link' ||
-     material.mime_type === 'text/uri-list' ||
-     (material.material_type as string) === 'link' ||
-     (material.file_url.startsWith('http') && 
-      !material.file_url.includes('drive.google.com') && 
-      !material.file_url.includes('docs.google.com') && 
-      !material.file_url.includes('/study-materials/') && 
-      !material.file_url.includes('/uploads/')))
-  );
-
-  const canPreview = isMaterialPreviewable(material);
-  const fileFormat = getMaterialFileFormat(material);
+  const isDriveFolder = isGoogleDriveFolder(material.file_url);
   const category = getMaterialCategory(material);
-  const isExternalLink = category === 'EXTERNAL_LINK' || isDirectDriveLink || isDirectResourceLink;
-  const isPdf = category === 'PDF' || category === 'IMAGE';
+  const fileFormat = getMaterialFileFormat(material);
+  const isExternalLink = category === 'EXTERNAL_LINK';
+  const isPreviewableFormat = category === 'PDF' || category === 'IMAGE' || category === 'PPT';
   const canDownload = Boolean(allowDownloads || isAdmin);
 
   const handleDownload = async (e?: React.MouseEvent) => {
@@ -303,17 +285,57 @@ export default function MaterialCard({
               className="col-span-2 w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition-all text-white bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 shadow-xs cursor-pointer"
             >
               <ExternalLink className="w-3.5 h-3.5 text-amber-500" />
-              <span>Open in New Tab</span>
+              <span>{isDriveFolder ? 'Open in Google Drive' : 'Open in New Tab'}</span>
             </button>
-          ) : isPdf ? (
-            <button
-              onClick={() => onPreview && onPreview(material)}
-              type="button"
-              className="col-span-2 w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition-all text-white bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 shadow-xs cursor-pointer"
-            >
-              <Eye className="w-3.5 h-3.5 text-amber-500" />
-              <span>{material.file_url?.startsWith('[') ? 'View Parts' : 'View PDF'}</span>
-            </button>
+          ) : isPreviewableFormat ? (
+            canDownload ? (
+              <>
+                <button
+                  onClick={() => onPreview && onPreview(material)}
+                  type="button"
+                  className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold transition-all text-slate-700 dark:text-slate-200 bg-slate-100/80 dark:bg-slate-800 hover:bg-slate-200/90 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white border border-slate-200/80 dark:border-slate-700 shadow-2xs cursor-pointer"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>{material.file_url?.startsWith('[') ? 'View Parts' : 'Preview'}</span>
+                </button>
+                <button
+                  onClick={handleDownload}
+                  disabled={downloading}
+                  type="button"
+                  className={`w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold text-white shadow-xs transition-all active:scale-95 cursor-pointer ${
+                    downloadSuccess
+                      ? 'bg-emerald-600'
+                      : 'bg-gradient-to-r from-lpu-600 to-amber-500 hover:from-lpu-700 hover:to-amber-600 shadow-orange-500/25 hover:shadow-md'
+                  }`}
+                >
+                  {downloadSuccess ? (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Downloaded!</span>
+                    </>
+                  ) : downloading ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Preparing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Download</span>
+                    </>
+                  )}
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => onPreview && onPreview(material)}
+                type="button"
+                className="col-span-2 w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition-all text-white bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 shadow-xs cursor-pointer"
+              >
+                <Eye className="w-3.5 h-3.5 text-amber-500" />
+                <span>{material.file_url?.startsWith('[') ? 'View Parts' : 'Preview Document'}</span>
+              </button>
+            )
           ) : canDownload ? (
             <button
               onClick={handleDownload}
@@ -343,9 +365,14 @@ export default function MaterialCard({
               )}
             </button>
           ) : (
-            <div className="col-span-2 w-full text-center py-2 px-3 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs text-amber-600 dark:text-amber-400 font-medium">
-              Downloads Disabled
-            </div>
+            <button
+              onClick={() => onPreview && onPreview(material)}
+              type="button"
+              className="col-span-2 w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition-all text-white bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 shadow-xs cursor-pointer"
+            >
+              <Eye className="w-3.5 h-3.5 text-amber-500" />
+              <span>Preview</span>
+            </button>
           )}
         </div>
       </div>
