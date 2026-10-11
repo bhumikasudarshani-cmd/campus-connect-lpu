@@ -1,20 +1,38 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { 
-  GraduationCap, 
-  BookOpen, 
-  LayoutDashboard, 
-  Users, 
-  ShieldCheck, 
-  LogOut, 
-  Menu, 
-  X, 
+import {
+  BookOpen,
+  LayoutDashboard,
+  Users,
+  ShieldCheck,
+  LogOut,
+  Menu,
+  ChevronDown,
   Sparkles,
-  ChevronDown
+  GraduationCap,
+  FileText
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from '@/components/ui/navigation-menu';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import ThemeToggle from '@/components/ThemeToggle';
 
 interface CurrentUser {
@@ -34,8 +52,27 @@ export default function Navbar() {
   const router = useRouter();
   const [user, setUser] = useState<CurrentUser | null>(cachedNavbarUser);
   const [loading, setLoading] = useState(!cachedNavbarUser);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close profile dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        profileDropdownRef.current &&
+        !profileDropdownRef.current.contains(event.target as Node)
+      ) {
+        setProfileDropdownOpen(false);
+      }
+    }
+    if (profileDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [profileDropdownOpen]);
 
   useEffect(() => {
     const now = Date.now();
@@ -113,284 +150,516 @@ export default function Navbar() {
     }
   };
 
-  const navLinks = [
-    { href: '/', label: 'Home', icon: GraduationCap },
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, requiresAuth: true },
-    { href: '/library', label: 'Study Library', icon: BookOpen, requiresAuth: true },
-    { href: '/community', label: 'Community', icon: Users, requiresAuth: true },
-  ];
-
-  if (user?.isAdmin) {
-    navLinks.push({ href: '/admin', label: 'Admin Panel', icon: ShieldCheck, requiresAuth: true });
-  }
-
   return (
-    <header className="sticky top-0 z-50 w-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 shadow-xs transition-colors">
-      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-10">
-        <div className="flex items-center justify-between h-16 sm:h-18 gap-4">
-          
-          {/* Brand Logo & Wordmark */}
-          <Link href="/" className="flex items-center gap-3 group shrink-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-lpu-600 to-amber-500 flex items-center justify-center text-white shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform duration-200 shrink-0">
-              <GraduationCap className="w-6 h-6" />
+    <header className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-white/95 backdrop-blur-md dark:border-neutral-800 dark:bg-[#0a0a0a]/95">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        
+        {/* Left: Brand Logo & Wordmark */}
+        <div className="flex items-center gap-6">
+          <Link href="/" className="flex items-center gap-2.5 group shrink-0">
+            <div className="flex h-8 w-8 items-center justify-center text-orange-500 dark:text-orange-400 transition-transform duration-200 group-hover:scale-105">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-6 w-6 fill-orange-500/20 text-orange-500 dark:text-orange-400"
+              >
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+              </svg>
             </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-lg sm:text-xl text-slate-900 dark:text-white tracking-tight whitespace-nowrap">
-                  Campus Connect <span className="text-lpu-600 dark:text-lpu-500 font-black">LPU</span>
-                </span>
-                <span className="hidden lg:inline-flex text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 border border-orange-200 dark:bg-orange-950/60 dark:text-orange-300 dark:border-orange-800/80 whitespace-nowrap">
-                  LPU Portal
-                </span>
-              </div>
-              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium -mt-0.5 hidden sm:block whitespace-nowrap">
-                Centralized Study Material Hub
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
+                CampusConnect <span className="text-orange-600 dark:text-orange-500 font-extrabold">LPU</span>
               </span>
+              <Badge
+                variant="secondary"
+                className="hidden xl:inline-flex bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full"
+              >
+                Study Hub
+              </Badge>
             </div>
           </Link>
 
-          {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-1.5 lg:gap-2">
-            {navLinks.map((link) => {
-              if (link.requiresAuth && !user) return null;
-              const isActive = pathname === link.href;
-              const Icon = link.icon;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all ${
-                    isActive
-                      ? 'bg-orange-50 dark:bg-orange-950/50 text-lpu-700 dark:text-orange-400 shadow-xs'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70'
-                  }`}
-                >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-lpu-600 dark:text-orange-400' : 'text-slate-400 dark:text-slate-400'}`} />
-                  {link.label}
-                  {link.href === '/admin' && (
-                    <span className="text-[10px] bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 font-bold px-1.5 py-0.2 rounded border dark:border-red-800/60">
-                      Admin
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-          </nav>
+          {/* Center: Desktop Navigation Links via NavigationMenu */}
+          <div className="hidden md:block">
+            <NavigationMenu>
+              <NavigationMenuList className="gap-1 lg:gap-2">
+                {/* Home */}
+                <NavigationMenuItem>
+                  <NavigationMenuLink asChild>
+                    <Link
+                      href="/"
+                      className={cn(
+                        "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
+                        pathname === "/"
+                          ? "text-neutral-950 dark:text-white bg-neutral-100 dark:bg-neutral-800/80 font-semibold"
+                          : "text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100/60 dark:hover:bg-neutral-800/40"
+                      )}
+                    >
+                      Home
+                    </Link>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
 
-          {/* Right Action / Profile & Theme Toggle */}
-          <div className="hidden md:flex items-center gap-3">
-            <ThemeToggle />
+                {/* Dashboard (Authenticated) */}
+                {user && (
+                  <NavigationMenuItem>
+                    <NavigationMenuLink asChild>
+                      <Link
+                        href="/dashboard"
+                        className={cn(
+                          "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
+                          pathname === "/dashboard"
+                            ? "text-neutral-950 dark:text-white bg-neutral-100 dark:bg-neutral-800/80 font-semibold"
+                            : "text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100/60 dark:hover:bg-neutral-800/40"
+                        )}
+                      >
+                        Dashboard
+                      </Link>
+                    </NavigationMenuLink>
+                  </NavigationMenuItem>
+                )}
 
-            {!loading && user ? (
-              <div className="relative">
-                <button
-                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                  className="flex items-center gap-2.5 p-1.5 pr-3 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 transition-all focus:outline-none"
-                >
-                  <img
-                    src={user.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`}
-                    alt={user.name}
-                    className="w-8 h-8 rounded-full border border-orange-200 dark:border-orange-800 object-cover bg-orange-50 dark:bg-slate-800"
-                  />
-                  <div className="flex flex-col text-left">
-                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight">
-                      {user.name.split(' ')[0]}
-                    </span>
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[110px]">
-                      {user.email}
-                    </span>
+                {/* Study Materials Dropdown */}
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger
+                    className={cn(
+                      "rounded-full bg-transparent px-3.5 py-1.5 text-sm font-medium transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800/50 dark:hover:text-white data-[state=open]:bg-neutral-100 dark:data-[state=open]:bg-neutral-800/60",
+                      pathname.startsWith('/library')
+                        ? "text-neutral-950 dark:text-white bg-neutral-100 dark:bg-neutral-800/80 font-semibold"
+                        : "text-neutral-600 dark:text-neutral-300"
+                    )}
+                  >
+                    Study Materials
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <ul className="grid w-[380px] gap-2 p-3 sm:w-[460px] md:w-[500px] md:grid-cols-2 rounded-2xl border border-neutral-200 bg-white shadow-xl dark:border-neutral-800 dark:bg-[#0f0f0f]">
+                      <li className="md:col-span-2">
+                        <NavigationMenuLink asChild>
+                          <Link
+                            href="/library"
+                            className="flex flex-col gap-1 rounded-xl p-3 bg-neutral-50 dark:bg-neutral-900/70 hover:bg-neutral-100 dark:hover:bg-neutral-800/90 transition-colors border border-neutral-200/60 dark:border-neutral-800"
+                          >
+                            <div className="flex items-center gap-2 font-semibold text-sm text-neutral-900 dark:text-white">
+                              <BookOpen className="w-4 h-4 text-orange-500 dark:text-orange-400" />
+                              All Study Materials
+                              <Badge className="ml-auto bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                Browse All
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                              Access all year-wise subject notes, syllabus, and study resources
+                            </p>
+                          </Link>
+                        </NavigationMenuLink>
+                      </li>
+                      <li>
+                        <NavigationMenuLink asChild>
+                          <Link
+                            href="/library?type=PYQs"
+                            className="block select-none space-y-1 rounded-xl p-2.5 leading-none no-underline outline-none transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800/60"
+                          >
+                            <div className="text-xs font-semibold text-neutral-900 dark:text-white flex items-center gap-1.5">
+                              <Sparkles className="w-3.5 h-3.5 text-orange-500 dark:text-orange-400" />
+                              Previous Year Papers
+                            </div>
+                            <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                              Mid-term & end-term PYQs
+                            </p>
+                          </Link>
+                        </NavigationMenuLink>
+                      </li>
+                      <li>
+                        <NavigationMenuLink asChild>
+                          <Link
+                            href="/library?type=Notes"
+                            className="block select-none space-y-1 rounded-xl p-2.5 leading-none no-underline outline-none transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800/60"
+                          >
+                            <div className="text-xs font-semibold text-neutral-900 dark:text-white flex items-center gap-1.5">
+                              <FileText className="w-3.5 h-3.5 text-orange-500 dark:text-orange-400" />
+                              Curated Notes
+                            </div>
+                            <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                              Handwritten & lecture notes
+                            </p>
+                          </Link>
+                        </NavigationMenuLink>
+                      </li>
+                    </ul>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+
+                {/* Members / Community */}
+                <NavigationMenuItem>
+                  <NavigationMenuLink asChild>
+                    <Link
+                      href="/community"
+                      className={cn(
+                        "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
+                        pathname === "/community"
+                          ? "text-neutral-950 dark:text-white bg-neutral-100 dark:bg-neutral-800/80 font-semibold"
+                          : "text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100/60 dark:hover:bg-neutral-800/40"
+                      )}
+                    >
+                      Community
+                      <Badge
+                        variant="secondary"
+                        className="bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 text-[10px] font-bold px-1.5 py-0 rounded-full"
+                      >
+                        LPU
+                      </Badge>
+                    </Link>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+
+                {/* Admin (Only if Admin) */}
+                {user?.isAdmin && (
+                  <NavigationMenuItem>
+                    <NavigationMenuLink asChild>
+                      <Link
+                        href="/admin"
+                        className={cn(
+                          "flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
+                          pathname.startsWith('/admin')
+                            ? "text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/50 font-semibold"
+                            : "text-neutral-600 dark:text-neutral-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-neutral-100/60 dark:hover:bg-neutral-800/40"
+                        )}
+                      >
+                        Admin
+                        <span className="text-[10px] bg-red-100 dark:bg-red-950/70 text-red-600 dark:text-red-400 font-bold px-1.5 py-0.2 rounded-full border border-red-200 dark:border-red-800/60">
+                          Panel
+                        </span>
+                      </Link>
+                    </NavigationMenuLink>
+                  </NavigationMenuItem>
+                )}
+              </NavigationMenuList>
+            </NavigationMenu>
+          </div>
+        </div>
+
+        {/* Right: Actions / Auth / Theme Toggle */}
+        <div className="hidden md:flex items-center gap-3">
+          <ThemeToggle />
+
+          {!loading && user ? (
+            /* Logged-In User Profile Menu */
+            <div className="relative" ref={profileDropdownRef}>
+              <button
+                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                className="flex items-center gap-2 py-1 px-1.5 pr-2.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800/70 border border-neutral-200 dark:border-neutral-800 transition-all focus:outline-none"
+                aria-label="User Profile Menu"
+              >
+                <img
+                  src={user.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`}
+                  alt={user.name}
+                  className="w-7 h-7 rounded-full object-cover border border-orange-500/40 bg-neutral-100 dark:bg-neutral-800"
+                />
+                <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 leading-tight">
+                  {user.name.split(' ')[0]}
+                </span>
+                <ChevronDown className="w-3.5 h-3.5 text-neutral-400" />
+              </button>
+
+              {profileDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-[#0f0f0f] rounded-2xl shadow-xl border border-neutral-200 dark:border-neutral-800 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="px-4 py-2.5 border-b border-neutral-100 dark:border-neutral-800">
+                    <p className="text-xs font-semibold text-neutral-900 dark:text-white">{user.name}</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{user.email}</p>
+                    <div className="mt-2 flex items-center gap-1.5">
+                      {user.community_joined ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                          Community Member
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                          Join Community Required
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                </button>
 
-                {/* Profile Dropdown */}
-                {profileDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                    <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800">
-                      <p className="text-xs font-semibold text-slate-900 dark:text-white">{user.name}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
-                      <div className="mt-2 flex items-center gap-1.5">
+                  <div className="py-1">
+                    <Link
+                      href="/dashboard"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800/60"
+                    >
+                      <LayoutDashboard className="w-4 h-4 text-neutral-400" />
+                      My Dashboard
+                    </Link>
+                    <Link
+                      href="/library"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800/60"
+                    >
+                      <BookOpen className="w-4 h-4 text-neutral-400" />
+                      Browse Study Materials
+                    </Link>
+                    <Link
+                      href="/community"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800/60"
+                    >
+                      <Users className="w-4 h-4 text-neutral-400" />
+                      Community & Directory
+                    </Link>
+                    {user.isAdmin && (
+                      <Link
+                        href="/admin"
+                        onClick={() => setProfileDropdownOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40"
+                      >
+                        <ShieldCheck className="w-4 h-4 text-red-500" />
+                        Admin Portal
+                      </Link>
+                    )}
+                  </div>
+
+                  <div className="border-t border-neutral-100 dark:border-neutral-800 pt-1">
+                    <button
+                      onClick={() => {
+                        setProfileDropdownOpen(false);
+                        handleLogout();
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4 text-rose-500" />
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : !loading ? (
+            /* Logged-Out Actions: Sign In & Site Theme Orange Pill CTA */
+            <div className="flex items-center gap-3">
+              <Link
+                href="/login"
+                className="rounded-full px-3.5 py-1.5 text-sm font-medium text-neutral-700 transition-colors hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-white"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/login"
+                className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold text-sm px-5 py-2 shadow-sm shadow-orange-500/25 transition-all duration-200 active:scale-95"
+              >
+                Get started
+              </Link>
+            </div>
+          ) : null}
+        </div>
+
+        {/* Mobile / Tablet View via Sheet */}
+        <div className="flex items-center gap-2 md:hidden">
+          <ThemeToggle />
+          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="shrink-0 rounded-xl text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-900"
+              >
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle navigation menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent
+              side="right"
+              className="flex w-[300px] sm:w-[380px] flex-col gap-6 border-l border-neutral-200 bg-white p-6 text-neutral-900 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-50 overflow-y-auto"
+            >
+              {/* Brand Header */}
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center text-orange-500 dark:text-orange-400">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-6 w-6 fill-orange-500/20 text-orange-500 dark:text-orange-400"
+                  >
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                  </svg>
+                </div>
+                <span className="text-lg font-bold tracking-tight text-neutral-900 dark:text-white">
+                  CampusConnect <span className="text-orange-600 dark:text-orange-500 font-extrabold">LPU</span>
+                </span>
+              </div>
+
+              {/* Logged in User Card in Mobile Drawer */}
+              {user && (
+                <div className="rounded-xl border border-neutral-200 p-3 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900/60">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={user.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`}
+                      alt={user.name}
+                      className="w-10 h-10 rounded-full border border-orange-500/40 object-cover"
+                    />
+                    <div className="truncate">
+                      <p className="text-sm font-bold text-neutral-900 dark:text-white truncate">{user.name}</p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{user.email}</p>
+                      <div className="mt-1">
                         {user.community_joined ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                            Community Member
+                          <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                            Community Member ✓
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                          <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
                             Join Community Required
                           </span>
                         )}
                       </div>
                     </div>
+                  </div>
+                </div>
+              )}
 
-                    <div className="py-1">
-                      <Link
-                        href="/dashboard"
-                        onClick={() => setProfileDropdownOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-                      >
-                        <LayoutDashboard className="w-4 h-4 text-slate-400" />
-                        My Dashboard
-                      </Link>
+              {/* Navigation Links */}
+              <div className="flex flex-col gap-1">
+                <Link
+                  href="/"
+                  onClick={() => setSheetOpen(false)}
+                  className={cn(
+                    "block py-2 text-base font-medium transition-colors rounded-lg px-2",
+                    pathname === "/"
+                      ? "text-orange-600 dark:text-orange-400 font-semibold bg-neutral-100 dark:bg-neutral-900"
+                      : "text-neutral-900 hover:text-orange-600 dark:text-neutral-200 dark:hover:text-orange-400"
+                  )}
+                >
+                  Home
+                </Link>
+
+                {user && (
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setSheetOpen(false)}
+                    className={cn(
+                      "block py-2 text-base font-medium transition-colors rounded-lg px-2",
+                      pathname === "/dashboard"
+                        ? "text-orange-600 dark:text-orange-400 font-semibold bg-neutral-100 dark:bg-neutral-900"
+                        : "text-neutral-900 hover:text-orange-600 dark:text-neutral-200 dark:hover:text-orange-400"
+                    )}
+                  >
+                    Dashboard
+                  </Link>
+                )}
+
+                {/* Mobile Accordion for Study Materials */}
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="study-materials" className="border-none">
+                    <AccordionTrigger className="py-2 px-2 text-base font-medium text-neutral-900 no-underline transition-colors hover:no-underline dark:text-neutral-200 hover:text-orange-600 dark:hover:text-orange-400">
+                      Study Materials
+                    </AccordionTrigger>
+                    <AccordionContent className="mt-1 ml-2 flex flex-col gap-2 border-l border-neutral-200 pb-2 pl-4 dark:border-neutral-800 [&_a]:no-underline">
                       <Link
                         href="/library"
-                        onClick={() => setProfileDropdownOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                        onClick={() => setSheetOpen(false)}
+                        className="text-sm font-medium text-neutral-600 dark:text-neutral-300 hover:text-orange-600 dark:hover:text-orange-400"
                       >
-                        <BookOpen className="w-4 h-4 text-slate-400" />
-                        Browse Study Materials
+                        All Materials
                       </Link>
-                      {user.isAdmin && (
-                        <Link
-                          href="/admin"
-                          onClick={() => setProfileDropdownOpen(false)}
-                          className="flex items-center gap-2 px-4 py-2 text-xs font-medium text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40"
-                        >
-                          <ShieldCheck className="w-4 h-4 text-red-500" />
-                          Admin Portal
-                        </Link>
-                      )}
-                    </div>
-
-                    <div className="border-t border-slate-100 dark:border-slate-800 pt-1">
-                      <button
-                        onClick={handleLogout}
-                        className="w-full flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-700 dark:hover:text-rose-400 transition-colors"
+                      <Link
+                        href="/library?type=PYQs"
+                        onClick={() => setSheetOpen(false)}
+                        className="text-sm font-medium text-neutral-600 dark:text-neutral-300 hover:text-orange-600 dark:hover:text-orange-400"
                       >
-                        <LogOut className="w-4 h-4 text-rose-500" />
-                        Sign Out
-                      </button>
-                    </div>
+                        Previous Year Papers (PYQs)
+                      </Link>
+                      <Link
+                        href="/library?type=Notes"
+                        onClick={() => setSheetOpen(false)}
+                        className="text-sm font-medium text-neutral-600 dark:text-neutral-300 hover:text-orange-600 dark:hover:text-orange-400"
+                      >
+                        Curated Lecture Notes
+                      </Link>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+
+                <Link
+                  href="/community"
+                  onClick={() => setSheetOpen(false)}
+                  className={cn(
+                    "flex items-center justify-between py-2 text-base font-medium transition-colors rounded-lg px-2",
+                    pathname === "/community"
+                      ? "text-orange-600 dark:text-orange-400 font-semibold bg-neutral-100 dark:bg-neutral-900"
+                      : "text-neutral-900 hover:text-orange-600 dark:text-neutral-200 dark:hover:text-orange-400"
+                  )}
+                >
+                  Community & Members
+                  <Badge
+                    variant="secondary"
+                    className="bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 text-[10px] font-bold"
+                  >
+                    WhatsApp
+                  </Badge>
+                </Link>
+
+                {user?.isAdmin && (
+                  <Link
+                    href="/admin"
+                    onClick={() => setSheetOpen(false)}
+                    className={cn(
+                      "flex items-center justify-between py-2 text-base font-medium transition-colors rounded-lg px-2",
+                      pathname.startsWith('/admin')
+                        ? "text-red-600 font-semibold bg-red-50 dark:bg-red-950/40"
+                        : "text-neutral-900 hover:text-red-600 dark:text-neutral-200"
+                    )}
+                  >
+                    Admin Portal
+                    <Badge variant="destructive" className="text-[10px]">
+                      Admin
+                    </Badge>
+                  </Link>
+                )}
+              </div>
+
+              {/* Bottom Drawer Actions */}
+              <div className="mt-auto flex flex-col gap-3 border-t border-neutral-200 pt-6 dark:border-neutral-800">
+                {user ? (
+                  <button
+                    onClick={() => {
+                      setSheetOpen(false);
+                      handleLogout();
+                    }}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-full border border-rose-200 dark:border-rose-900/50 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign Out
+                  </button>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <Link
+                      href="/login"
+                      onClick={() => setSheetOpen(false)}
+                      className="w-full py-2.5 text-center text-sm font-semibold text-neutral-800 dark:text-neutral-200 border border-neutral-300 dark:border-neutral-700 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-900"
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      href="/login"
+                      onClick={() => setSheetOpen(false)}
+                      className="w-full py-2.5 text-center text-sm font-semibold bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-full shadow-sm shadow-orange-500/25"
+                    >
+                      Get started
+                    </Link>
                   </div>
                 )}
               </div>
-            ) : !loading ? (
-              <div className="flex items-center gap-2.5">
-                <Link
-                  href="/login"
-                  className="px-4 py-2 rounded-lg text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  href="/login"
-                  className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-lpu-600 to-amber-500 hover:from-lpu-700 hover:to-amber-600 shadow-sm shadow-orange-500/30 transition-all active:scale-98 flex items-center gap-1.5"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  Get Study Material
-                </Link>
-              </div>
-            ) : null}
-          </div>
-
-          {/* Mobile Menu Actions & Button */}
-          <div className="flex md:hidden items-center gap-2">
-            <ThemeToggle />
-            {!loading && user && (
-              <img
-                src={user.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`}
-                alt={user.name}
-                className="w-8 h-8 rounded-full border border-orange-200 dark:border-orange-800"
-              />
-            )}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none"
-              aria-label="Toggle Navigation"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
+            </SheetContent>
+          </Sheet>
         </div>
+
       </div>
-
-      {/* Mobile Menu Dropdown */}
-      {mobileMenuOpen && (
-        <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 pt-3 pb-6 space-y-2">
-          {user && (
-            <div className="pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-3">
-                <img
-                  src={user.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`}
-                  alt={user.name}
-                  className="w-10 h-10 rounded-full border border-orange-200 dark:border-orange-800"
-                />
-                <div>
-                  <p className="text-sm font-bold text-slate-900 dark:text-white">{user.name}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
-                  <div className="mt-1">
-                    {user.community_joined ? (
-                      <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-                        Community Member ✓
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
-                        Join Community Required
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-1">
-            {navLinks.map((link) => {
-              if (link.requiresAuth && !user) return null;
-              const isActive = pathname === link.href;
-              const Icon = link.icon;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold ${
-                    isActive 
-                      ? 'bg-orange-50 dark:bg-orange-950/50 text-lpu-700 dark:text-orange-400' 
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  <Icon className={`w-5 h-5 ${isActive ? 'text-lpu-600 dark:text-orange-400' : 'text-slate-400'}`} />
-                  {link.label}
-                </Link>
-              );
-            })}
-          </div>
-
-          <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
-            {user ? (
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  handleLogout();
-                }}
-                className="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg"
-              >
-                <LogOut className="w-5 h-5" />
-                Sign Out
-              </button>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <Link
-                  href="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="w-full py-2.5 text-center text-sm font-bold text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  href="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="w-full py-2.5 text-center text-sm font-bold text-white bg-gradient-to-r from-lpu-600 to-amber-500 rounded-lg shadow-sm"
-                >
-                  Get Study Material
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </header>
   );
 }
