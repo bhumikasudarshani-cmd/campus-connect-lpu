@@ -5,7 +5,7 @@ import { createServerClient } from '@supabase/ssr';
 import { getSupabaseConfig } from './lib/supabase/config';
 
 const SECRET_KEY = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'campus_connect_lpu_super_secret_jwt_key_2026_production'
+  process.env.JWT_SECRET || 'cc_lpu_sec_auth_rotated_token_9f82b7c1e4a3d6052841_2026'
 );
 
 const SESSION_COOKIE_NAME = 'cc_session';
@@ -69,6 +69,24 @@ export async function middleware(request: NextRequest) {
       // For all pages, redirect to /maintenance
       const maintenanceUrl = new URL('/maintenance', request.url);
       return NextResponse.redirect(maintenanceUrl);
+    }
+  }
+
+  // Extra Defense-in-depth: Protect all /api/admin endpoints at the edge
+  if (pathname.startsWith('/api/admin')) {
+    const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized: Authentication required.' }, { status: 401 });
+    }
+    try {
+      const { payload } = await jwtVerify(token, SECRET_KEY);
+      const isOwner = (payload as any).isOwner || (payload as any).role === 'owner' || (payload as any).email?.toLowerCase() === 'mishra.rajvansh11@gmail.com';
+      const isAdmin = isOwner || (payload as any).isAdmin || (payload as any).role === 'admin';
+      if (!isAdmin) {
+        return NextResponse.json({ error: 'Forbidden: Admin privileges required.' }, { status: 403 });
+      }
+    } catch {
+      return NextResponse.json({ error: 'Unauthorized: Invalid session token.' }, { status: 401 });
     }
   }
 
