@@ -148,13 +148,21 @@ html.dark .academic-grid-pattern {
 .btn .sparkle, .btn-uiverse .sparkle {
   fill: #AAAAAA;
   color: #AAAAAA;
-  transition: all 800ms ease;
+  transition: all 450ms ease;
 }
 
 .btn .text, .btn-uiverse .text {
   font-weight: 600;
   color: #AAAAAA;
   transition: color 450ms ease;
+}
+
+.btn > *:not(.sparkle), .btn-uiverse > *:not(.sparkle) {
+  transition: color 450ms ease;
+}
+
+.btn svg, .btn-uiverse svg {
+  transition: transform 450ms ease, fill 450ms ease, color 450ms ease;
 }
 
 /* Site-related Orange Theme Glow Variant (Default) */
@@ -167,14 +175,16 @@ html.dark .academic-grid-pattern {
   transform: translateY(-2px);
 }
 
-.btn:hover .text, .btn-uiverse:hover .text, .btn-uiverse-orange:hover .text {
+.btn:hover .text, .btn-uiverse:hover .text, .btn-uiverse-orange:hover .text,
+.btn:hover > *:not(.sparkle), .btn-uiverse:hover > *:not(.sparkle) {
   color: white;
 }
 
-.btn:hover .sparkle, .btn-uiverse:hover .sparkle, .btn-uiverse-orange:hover .sparkle {
+.btn:hover .sparkle, .btn-uiverse:hover .sparkle, .btn-uiverse-orange:hover .sparkle,
+.btn:hover svg, .btn-uiverse:hover svg {
   fill: white;
   color: white;
-  transform: scale(1.2);
+  transform: scale(1.18);
 }
 
 /* Purple Uiverse.io Original Variant */

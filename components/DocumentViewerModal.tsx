@@ -1371,11 +1371,11 @@ export default function DocumentViewerModal({
             {canDownload ? (
               <button
                 onClick={handleDownloadActiveFile}
-                className="flex items-center gap-1 sm:gap-1.5 p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-gradient-to-r from-lpu-600 to-amber-500 hover:from-lpu-700 hover:to-amber-600 text-white text-xs font-bold shadow-xs transition-all active:scale-98"
+                className="btn flex items-center gap-1 sm:gap-1.5 p-1.5 sm:px-3 sm:py-1.5 rounded-full text-xs font-bold shadow-xs cursor-pointer group"
                 title="Download this document"
               >
-                <Download className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Download</span>
+                <Download className="sparkle w-3.5 h-3.5 text-orange-400" />
+                <span className="text hidden sm:inline">Download</span>
               </button>
             ) : null}
 
@@ -1492,10 +1492,10 @@ export default function DocumentViewerModal({
               </div>
               <button
                 onClick={handleDownloadActiveFile}
-                className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-lpu-600 to-amber-500 hover:from-lpu-700 hover:to-amber-600 text-white font-bold text-sm shadow-xl shadow-orange-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="btn w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full font-bold text-sm shadow-xl cursor-pointer group"
               >
-                <Download className="w-4 h-4" />
-                <span>Download File ({activeFileSizeStr || fileFormat.label})</span>
+                <Download className="sparkle w-4 h-4 text-orange-400" />
+                <span className="text">Download File ({activeFileSizeStr || fileFormat.label})</span>
               </button>
             </div>
           ) : externalLinkUrl ? (
@@ -1521,10 +1521,10 @@ export default function DocumentViewerModal({
                 href={externalLinkUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-lpu-600 to-amber-500 hover:from-lpu-700 hover:to-amber-600 text-white font-bold text-sm shadow-xl shadow-orange-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="btn w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full font-bold text-sm shadow-xl cursor-pointer group"
               >
-                <span>Open Resource Link</span>
-                <ExternalLink className="w-4 h-4" />
+                <span className="text">Open Resource Link</span>
+                <ExternalLink className="sparkle w-4 h-4 text-orange-400" />
               </a>
             </div>
           ) : isDriveResource ? (
@@ -1572,19 +1572,19 @@ export default function DocumentViewerModal({
                 {canDownload && (
                   <button
                     onClick={handleDownloadActiveFile}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl bg-gradient-to-r from-lpu-600 to-amber-500 hover:from-lpu-700 hover:to-amber-600 text-white font-bold text-xs shadow-md shadow-orange-500/20 transition-all cursor-pointer active:scale-95"
+                    className="btn w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full font-bold text-xs shadow-md cursor-pointer group"
                   >
-                    <Download className="w-4 h-4" />
-                    <span>Download Document</span>
+                    <Download className="sparkle w-4 h-4 text-orange-400" />
+                    <span className="text">Download Document</span>
                   </button>
                 )}
                 {canDownload && externalLinkUrl && (
                   <button
                     onClick={handleOpenSourceLink}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 hover:text-white font-bold text-xs border border-slate-600 transition-all cursor-pointer"
+                    className="btn w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full font-bold text-xs cursor-pointer group"
                   >
-                    <ExternalLink className="w-4 h-4" />
-                    <span>Open Resource Link</span>
+                    <ExternalLink className="sparkle w-4 h-4 text-orange-400" />
+                    <span className="text">Open Resource Link</span>
                   </button>
                 )}
               </div>

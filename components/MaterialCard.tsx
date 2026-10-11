@@ -282,10 +282,10 @@ export default function MaterialCard({
             <button
               onClick={() => handleOpenDirectLink(material.file_url)}
               type="button"
-              className="col-span-2 w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition-all text-white bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 shadow-xs cursor-pointer"
+              className="btn col-span-2 w-full py-2.5 px-3 rounded-xl text-xs font-bold shadow-xs cursor-pointer"
             >
-              <ExternalLink className="w-3.5 h-3.5 text-amber-500" />
-              <span>{isDriveFolder ? 'Open in Google Drive' : 'Open in New Tab'}</span>
+              <ExternalLink className="sparkle w-3.5 h-3.5 text-amber-500" />
+              <span className="text">{isDriveFolder ? 'Open in Google Drive' : 'Open in New Tab'}</span>
             </button>
           ) : isPreviewableFormat ? (
             canDownload ? (
@@ -293,35 +293,31 @@ export default function MaterialCard({
                 <button
                   onClick={() => onPreview && onPreview(material)}
                   type="button"
-                  className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold transition-all text-slate-700 dark:text-slate-200 bg-slate-100/80 dark:bg-slate-800 hover:bg-slate-200/90 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white border border-slate-200/80 dark:border-slate-700 shadow-2xs cursor-pointer"
+                  className="btn w-full py-2 px-3 rounded-xl text-xs font-semibold shadow-2xs cursor-pointer"
                 >
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>{material.file_url?.startsWith('[') ? 'View Parts' : 'Preview'}</span>
+                  <Eye className="sparkle w-3.5 h-3.5" />
+                  <span className="text">{material.file_url?.startsWith('[') ? 'View Parts' : 'Preview'}</span>
                 </button>
                 <button
                   onClick={handleDownload}
                   disabled={downloading}
                   type="button"
-                  className={`w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold text-white shadow-xs transition-all active:scale-95 cursor-pointer ${
-                    downloadSuccess
-                      ? 'bg-emerald-600'
-                      : 'bg-gradient-to-r from-lpu-600 to-amber-500 hover:from-lpu-700 hover:to-amber-600 shadow-orange-500/25 hover:shadow-md'
-                  }`}
+                  className="btn w-full py-2 px-3 rounded-xl text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
                 >
                   {downloadSuccess ? (
                     <>
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Downloaded!</span>
+                      <CheckCircle2 className="sparkle w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text">Downloaded!</span>
                     </>
                   ) : downloading ? (
                     <>
                       <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Preparing...</span>
+                      <span className="text">Preparing...</span>
                     </>
                   ) : (
                     <>
-                      <Download className="w-3.5 h-3.5" />
-                      <span>Download</span>
+                      <Download className="sparkle w-3.5 h-3.5" />
+                      <span className="text">Download</span>
                     </>
                   )}
                 </button>
@@ -330,10 +326,10 @@ export default function MaterialCard({
               <button
                 onClick={() => onPreview && onPreview(material)}
                 type="button"
-                className="col-span-2 w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition-all text-white bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 shadow-xs cursor-pointer"
+                className="btn col-span-2 w-full py-2 px-3 rounded-xl text-xs font-bold shadow-xs cursor-pointer"
               >
-                <Eye className="w-3.5 h-3.5 text-amber-500" />
-                <span>{material.file_url?.startsWith('[') ? 'View Parts' : 'Preview Document'}</span>
+                <Eye className="sparkle w-3.5 h-3.5 text-amber-500" />
+                <span className="text">{material.file_url?.startsWith('[') ? 'View Parts' : 'Preview Document'}</span>
               </button>
             )
           ) : canDownload ? (
@@ -341,26 +337,22 @@ export default function MaterialCard({
               onClick={handleDownload}
               disabled={downloading}
               type="button"
-              className={`col-span-2 w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold text-white shadow-xs transition-all active:scale-95 cursor-pointer ${
-                downloadSuccess
-                  ? 'bg-emerald-600'
-                  : 'bg-gradient-to-r from-lpu-600 to-amber-500 hover:from-lpu-700 hover:to-amber-600 shadow-orange-500/25 hover:shadow-md'
-              }`}
+              className="btn col-span-2 w-full py-2 px-3 rounded-xl text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
             >
               {downloadSuccess ? (
                 <>
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Downloaded!</span>
+                  <CheckCircle2 className="sparkle w-3.5 h-3.5 text-emerald-400" />
+                  <span className="text">Downloaded!</span>
                 </>
               ) : downloading ? (
                 <>
                   <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Preparing...</span>
+                  <span className="text">Preparing...</span>
                 </>
               ) : (
                 <>
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Download</span>
+                  <Download className="sparkle w-3.5 h-3.5" />
+                  <span className="text">Download</span>
                 </>
               )}
             </button>
@@ -368,10 +360,10 @@ export default function MaterialCard({
             <button
               onClick={() => onPreview && onPreview(material)}
               type="button"
-              className="col-span-2 w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition-all text-white bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 shadow-xs cursor-pointer"
+              className="btn col-span-2 w-full py-2 px-3 rounded-xl text-xs font-bold shadow-xs cursor-pointer"
             >
-              <Eye className="w-3.5 h-3.5 text-amber-500" />
-              <span>Preview</span>
+              <Eye className="sparkle w-3.5 h-3.5 text-amber-500" />
+              <span className="text">Preview</span>
             </button>
           )}
         </div>

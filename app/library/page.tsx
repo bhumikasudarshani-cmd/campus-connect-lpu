@@ -276,11 +276,11 @@ function LibraryContent() {
               setFeedbackDefaultTab('material_request');
               setFeedbackModalOpen(true);
             }}
-            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-300 border border-amber-200/90 dark:border-amber-800/80 font-bold text-xs transition-colors shrink-0 shadow-2xs cursor-pointer"
+            className="btn px-4 py-2.5 rounded-full font-bold text-xs shrink-0 shadow-xs cursor-pointer group"
             title="Request a subject code or material not yet present"
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-            Request Subject
+            <Sparkles className="sparkle w-3.5 h-3.5 text-orange-400" />
+            <span className="text">Request Subject</span>
           </button>
 
           {/* Search Bar Input */}
@@ -347,13 +347,13 @@ function LibraryContent() {
                     setSelectedYear(yt.year);
                     setSelectedSubject('All');
                   }}
-                  className={`py-3 px-4 rounded-xl text-xs font-bold transition-all text-center flex flex-col items-center justify-center gap-0.5 ${
+                  className={`btn py-3 px-4 rounded-2xl text-xs font-bold transition-all text-center flex flex-col items-center justify-center gap-0.5 cursor-pointer group ${
                     isSelected
-                      ? 'bg-gradient-to-r from-lpu-600 to-amber-500 text-white shadow-md shadow-orange-500/25 scale-[1.02]'
-                      : 'bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
+                      ? '!bg-gradient-to-r !from-lpu-600 !to-amber-500 text-white shadow-md shadow-orange-500/25 scale-[1.02]'
+                      : 'border border-slate-200/80 dark:border-slate-800'
                   }`}
                 >
-                  <span className="text-sm font-extrabold">{yt.label}</span>
+                  <span className={`text text-sm font-extrabold ${isSelected ? '!text-white' : ''}`}>{yt.label}</span>
                   <span className={`text-[10px] ${isSelected ? 'text-orange-100' : 'text-slate-400 dark:text-slate-500'}`}>
                     {yt.year === 0 ? 'All 4 Years' : `Year ${yt.year}`}
                   </span>
@@ -380,19 +380,19 @@ function LibraryContent() {
                   <button
                     key={cat.id}
                     onClick={() => setSelectedType(cat.id)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                    className={`btn px-3.5 py-2 rounded-full text-xs font-semibold cursor-pointer group transition-all ${
                       isSelected
-                        ? 'bg-slate-900 dark:bg-orange-600 text-white shadow-xs font-bold'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                        ? '!bg-gradient-to-r !from-lpu-600 !to-amber-500 shadow-md shadow-orange-500/25 scale-[1.02]'
+                        : 'border border-slate-200/80 dark:border-slate-800'
                     }`}
                   >
-                    <Icon className="w-3.5 h-3.5" />
-                    <span>{cat.label}</span>
+                    <Icon className={`sparkle w-3.5 h-3.5 ${isSelected ? '!text-white !fill-white' : ''}`} />
+                    <span className={`text ${isSelected ? '!text-white font-bold' : ''}`}>{cat.label}</span>
                     <span
                       className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono transition-colors ${
                         isSelected
                           ? 'bg-white/20 text-white font-bold'
-                          : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium'
+                          : 'bg-white/10 text-slate-400 font-medium'
                       }`}
                     >
                       {count}
@@ -597,16 +597,16 @@ function LibraryContent() {
                 setFeedbackDefaultTab('material_request');
                 setFeedbackModalOpen(true);
               }}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-lpu-600 hover:bg-lpu-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+              className="btn w-full sm:w-auto px-5 py-2.5 rounded-full font-bold text-xs shadow-xs cursor-pointer group"
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              Request This Subject / Material
+              <Sparkles className="sparkle w-3.5 h-3.5 text-orange-400" />
+              <span className="text">Request This Subject / Material</span>
             </button>
             <button
               onClick={clearAllFilters}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer"
+              className="btn w-full sm:w-auto px-4 py-2.5 rounded-full font-bold text-xs cursor-pointer group"
             >
-              Reset Filters & View All
+              <span className="text">Reset Filters & View All</span>
             </button>
           </div>
         </div>
