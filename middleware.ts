@@ -18,6 +18,9 @@ interface SessionPayload {
   isAdmin: boolean;
 }
 
+// Set to true to temporarily pause the site for maintenance and updates
+const MAINTENANCE_MODE = true;
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   let response = NextResponse.next({
@@ -26,13 +29,53 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // Static assets and internal routes to skip
+  // Always allow static assets and internal Next.js assets
   if (
     pathname.startsWith('/_next') ||
-    pathname.startsWith('/api') ||
-    pathname.startsWith('/auth/callback') ||
     pathname.startsWith('/uploads') ||
-    pathname.includes('.') // file extensions
+    pathname.includes('.') // static file extensions
+  ) {
+    return response;
+  }
+
+  // ========================================================
+  // MAINTENANCE MODE GATEKEEPER
+  // ========================================================
+  if (MAINTENANCE_MODE) {
+    // Allow the maintenance page itself
+    if (pathname === '/maintenance') {
+      return response;
+    }
+
+    // Allow auth callbacks, admin endpoints, and owner admin access
+    const isAdminBypass =
+      pathname.startsWith('/admin') ||
+      pathname.startsWith('/auth/callback') ||
+      pathname.startsWith('/api/auth') ||
+      (pathname === '/login' && request.nextUrl.searchParams.get('admin') === 'true');
+
+    if (!isAdminBypass) {
+      // If API route, return 503 Maintenance
+      if (pathname.startsWith('/api')) {
+        return NextResponse.json(
+          {
+            error: 'Campus Connect LPU is temporarily paused for updates. Please check back shortly.',
+            maintenance: true,
+          },
+          { status: 503 }
+        );
+      }
+
+      // For all pages, redirect to /maintenance
+      const maintenanceUrl = new URL('/maintenance', request.url);
+      return NextResponse.redirect(maintenanceUrl);
+    }
+  }
+
+  // Internal routes to skip when not in maintenance
+  if (
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/auth/callback')
   ) {
     return response;
   }
