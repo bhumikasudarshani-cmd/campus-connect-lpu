@@ -59,6 +59,10 @@ import { formatYearName } from '@/components/MaterialCard';
 import { uploadToGoogleDriveResumable } from '@/lib/google-drive-client';
 import { mergeDocumentsToPdf, DocumentItem } from '@/lib/image-to-pdf';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { AdminMaterialsTable } from '@/components/admin/tables/AdminMaterialsTable';
+import { AdminUsersTable } from '@/components/admin/tables/AdminUsersTable';
+import { AdminAnalyticsTable } from '@/components/admin/tables/AdminAnalyticsTable';
+import { AdminLinksTable } from '@/components/admin/tables/AdminLinksTable';
 
 interface UserActivityRecord {
   id: string;
@@ -2774,137 +2778,23 @@ export default function AdminDashboardPage() {
 
               <button
                 onClick={() => setActiveTab('upload')}
-                className="py-2 px-4 rounded-xl bg-lpu-600 hover:bg-lpu-700 text-white font-bold text-xs shadow-xs flex items-center justify-center gap-1.5"
+                className="btn py-2.5 px-5 rounded-full text-xs font-bold shadow-xs flex items-center justify-center gap-2 group cursor-pointer"
               >
-                <PlusCircle className="w-4 h-4" />
-                <span>+ Upload New Material</span>
+                <PlusCircle className="sparkle w-4 h-4 text-orange-500" />
+                <span className="text">+ Upload New Material</span>
               </button>
             </div>
 
-            {/* Filters Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
-              
-              {/* Search */}
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={matSearch}
-                  onChange={(e) => setMatSearch(e.target.value)}
-                  placeholder="Search by title, subject name, or code (e.g. CSE101)..."
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-lpu-500"
-                />
-              </div>
-
-              {/* Year Filter */}
-              <div className="flex items-center gap-2">
-                <select
-                  value={matYearFilter}
-                  onChange={(e) => setMatYearFilter(parseInt(e.target.value, 10))}
-                  className="px-3 py-2 text-xs font-bold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-lpu-500 text-slate-700 dark:text-slate-200"
-                >
-                  <option value={0}>All Years</option>
-                  <option value={1}>1st Year</option>
-                  <option value={2}>2nd Year</option>
-                  <option value={3}>3rd Year</option>
-                  <option value={4}>4th Year</option>
-                </select>
-
-                {/* Type Filter */}
-                <select
-                  value={matTypeFilter}
-                  onChange={(e) => setMatTypeFilter(e.target.value)}
-                  className="px-3 py-2 text-xs font-bold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-lpu-500 text-slate-700 dark:text-slate-200"
-                >
-                  <option value="All">All Types</option>
-                  <option value="Notes">Notes</option>
-                  <option value="Mid-Term">Mid-Term</option>
-                  <option value="End-Term">End-Term</option>
-                  <option value="PYQs">PYQs</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Table */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800">
-                    <tr>
-                      <th className="py-3 px-4">Title & Subject</th>
-                      <th className="py-3 px-4">Year</th>
-                      <th className="py-3 px-4">Type</th>
-                      <th className="py-3 px-4">Size</th>
-                      <th className="py-3 px-4">Downloads</th>
-                      <th className="py-3 px-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {filteredMaterials.map((mat) => (
-                      <tr key={mat.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/50 transition-colors">
-                        <td className="py-3 px-4">
-                          <div className="font-bold text-slate-900 dark:text-white line-clamp-1">{mat.title}</div>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-                            {mat.subject_code} • {mat.subject}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className="font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-[11px]">
-                            {formatYearName(mat.year)}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className="font-semibold text-slate-800 dark:text-slate-200 text-[11px]">
-                            {mat.material_type}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-slate-500 dark:text-slate-400 font-mono text-[11px]">
-                          {mat.file_size}
-                        </td>
-                        <td className="py-3 px-4 font-bold text-slate-800 dark:text-slate-200">
-                          {mat.download_count}
-                        </td>
-                        <td className="py-3 px-4 text-right space-x-1 whitespace-nowrap">
-                          <a
-                            href={`/api/materials/${mat.id}/preview`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 inline-block"
-                            title="Preview Document"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </a>
-                          <button
-                            onClick={() => {
-                              setEditingMaterial(mat);
-                              setEditFile(null);
-                            }}
-                            className="p-1.5 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 inline-block"
-                            title="Edit & Replace File"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => requestDeleteMaterial(mat.id, mat.title)}
-                            className="p-1.5 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 inline-block"
-                            title="Permanently Delete Material"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {filteredMaterials.length === 0 && (
-                      <tr>
-                        <td colSpan={6} className="py-8 text-center text-slate-400 dark:text-slate-500 text-xs">
-                          No study materials found matching the specified filters.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <AdminMaterialsTable
+              materials={materials}
+              loading={loading}
+              onEdit={(mat) => {
+                setEditingMaterial(mat);
+                setEditFile(null);
+              }}
+              onDelete={(mat) => requestDeleteMaterial(mat.id, mat.title)}
+              onUploadClick={() => setActiveTab('upload')}
+            />
           </div>
         )}
 
@@ -3847,174 +3737,12 @@ export default function AdminDashboardPage() {
               </span>
             </div>
 
-            {/* Filter and Search Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={userSearch}
-                  onChange={(e) => setUserSearch(e.target.value)}
-                  placeholder="Search students by name, email, or user ID..."
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-lpu-500 dark:focus:border-orange-500"
-                />
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <select
-                  value={userYearFilter}
-                  onChange={(e) => setUserYearFilter(e.target.value as any)}
-                  className="px-3 py-2 text-xs font-bold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-lpu-500 dark:focus:border-orange-500 text-slate-700 dark:text-slate-200"
-                >
-                  <option value="all">🎓 All Academic Years ({users.length})</option>
-                  <option value="1">1st Year ({users.filter(u => u.year === 1).length})</option>
-                  <option value="2">2nd Year ({users.filter(u => u.year === 2).length})</option>
-                  <option value="3">3rd Year ({users.filter(u => u.year === 3).length})</option>
-                  <option value="4">4th Year ({users.filter(u => u.year === 4).length})</option>
-                  <option value="unassigned">Unassigned ({users.filter(u => !u.year || u.year < 1 || u.year > 4).length})</option>
-                </select>
-
-                <select
-                  value={userStatusFilter}
-                  onChange={(e) => setUserStatusFilter(e.target.value as any)}
-                  className="px-3 py-2 text-xs font-bold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-lpu-500 dark:focus:border-orange-500 text-slate-700 dark:text-slate-200"
-                >
-                  <option value="all">All Statuses ({users.length})</option>
-                  <option value="verified">Verified ({users.filter(u => u.community_joined).length})</option>
-                  <option value="unverified">Unverified ({users.filter(u => !u.community_joined).length})</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Users Table */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800">
-                    <tr>
-                      <th className="py-3 px-4">Student</th>
-                      <th className="py-3 px-4">Email</th>
-                      <th className="py-3 px-4">Role</th>
-                      <th className="py-3 px-4">Academic Year</th>
-                      <th className="py-3 px-4">Community Access</th>
-                      <th className="py-3 px-4">Last Active</th>
-                      <th className="py-3 px-4">Registered</th>
-                      <th className="py-3 px-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {filteredUsers.map((u) => (
-                      <tr key={u.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors">
-                        <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white flex items-center gap-2.5">
-                          <img
-                            src={u.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(u.name)}`}
-                            alt={u.name}
-                            className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 object-cover"
-                          />
-                          <div>
-                            <div className="font-bold text-slate-900 dark:text-white">{u.name}</div>
-                            <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">{u.id}</div>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 text-slate-700 dark:text-slate-300 font-mono text-[11px]">
-                          {u.email}
-                        </td>
-                        <td className="py-3 px-4">
-                          {u.role === 'owner' ? (
-                            <span className="text-[10px] font-black uppercase text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/50 px-2 py-0.5 rounded">
-                              Owner
-                            </span>
-                          ) : u.role === 'admin' ? (
-                            <span className="text-[10px] font-black uppercase text-blue-800 dark:text-blue-300 bg-blue-100 dark:bg-blue-950/50 px-2 py-0.5 rounded">
-                              Admin
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
-                              Student
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-3 px-4">
-                          {u.year === 1 ? (
-                            <span className="text-[10px] font-bold text-sky-800 dark:text-sky-300 bg-sky-100 dark:bg-sky-950/50 px-2 py-0.5 rounded-full border border-sky-200 dark:border-sky-800">
-                              🎓 1st Year
-                            </span>
-                          ) : u.year === 2 ? (
-                            <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-                              🎓 2nd Year
-                            </span>
-                          ) : u.year === 3 ? (
-                            <span className="text-[10px] font-bold text-purple-800 dark:text-purple-300 bg-purple-100 dark:bg-purple-950/50 px-2 py-0.5 rounded-full border border-purple-200 dark:border-purple-800">
-                              🎓 3rd Year
-                            </span>
-                          ) : u.year === 4 ? (
-                            <span className="text-[10px] font-bold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/50 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
-                              🎓 4th Year
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
-                              Not Set
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-3 px-4">
-                          {u.community_joined ? (
-                            <div>
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                Verified ✓
-                              </span>
-                              {u.verification_link_name && (
-                                <div className="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5 max-w-[140px] truncate" title={u.verification_link_name}>
-                                  Via: {u.verification_link_name}
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                              Unverified
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-3 px-4 font-medium text-slate-700 dark:text-slate-300 text-[11px]">
-                          {formatRelativeTime(u.last_active_at || u.last_login)}
-                        </td>
-                        <td className="py-3 px-4 text-slate-500 dark:text-slate-400 text-[11px]">
-                          {new Date(u.created_at).toLocaleDateString()}
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          {u.community_joined ? (
-                            <button
-                              onClick={() => requestRevokeIndividualUser(u)}
-                              className="px-2.5 py-1 text-[11px] font-bold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 rounded-lg transition-colors border border-rose-200 dark:border-rose-800 cursor-pointer"
-                              title="Revoke library access for this student"
-                            >
-                              Revoke Access
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => requestApproveIndividualUser(u)}
-                              className="px-2.5 py-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-lg transition-colors border border-emerald-200 dark:border-emerald-800 cursor-pointer shadow-2xs"
-                              title="Manually verify and grant library access to this student"
-                            >
-                              Approve Access
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                    {filteredUsers.length === 0 && (
-                      <tr>
-                        <td colSpan={7} className="py-8 text-center text-slate-400 dark:text-slate-500 text-xs">
-                          No users found matching query.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <AdminUsersTable
+              users={users}
+              loading={loading}
+              onApprove={(u) => requestApproveIndividualUser(u)}
+              onRevoke={(u) => requestRevokeIndividualUser(u)}
+            />
           </div>
         )}
 
@@ -4038,112 +3766,24 @@ export default function AdminDashboardPage() {
                   setLinkError('');
                   setShowAddLinkModal(true);
                 }}
-                className="py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-1.5"
+                className="btn py-2.5 px-5 rounded-full text-xs font-bold shadow-xs flex items-center justify-center gap-2 group cursor-pointer"
               >
-                <PlusCircle className="w-4 h-4" />
-                + Add Verification Link
+                <PlusCircle className="sparkle w-4 h-4 text-emerald-500" />
+                <span className="text">+ Add Verification Link</span>
               </button>
             </div>
 
-            {/* Links Table */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800">
-                    <tr>
-                      <th className="py-3 px-5">Name & Category</th>
-                      <th className="py-3 px-5">WhatsApp Invite URL</th>
-                      <th className="py-3 px-5">Extracted Code</th>
-                      <th className="py-3 px-5">Status</th>
-                      <th className="py-3 px-5">Students Verified</th>
-                      <th className="py-3 px-5">Date Created</th>
-                      <th className="py-3 px-5 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {links.map((link) => (
-                      <tr key={link.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors">
-                        <td className="py-3.5 px-5">
-                          <div className="font-bold text-slate-900 dark:text-white">{link.name}</div>
-                          <div className="text-[10px] text-slate-500 dark:text-slate-400 capitalize">
-                            {link.type.replace('_', ' ')}
-                          </div>
-                        </td>
-                        <td className="py-3.5 px-5 font-mono text-[11px] text-slate-600 dark:text-slate-300 max-w-[200px] truncate">
-                          <a
-                            href={link.invite_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="hover:text-emerald-600 dark:hover:text-emerald-400 hover:underline flex items-center gap-1"
-                          >
-                            {link.invite_url}
-                            <ExternalLink className="w-3 h-3 opacity-60 shrink-0" />
-                          </a>
-                        </td>
-                        <td className="py-3.5 px-5 font-mono text-[11px] text-slate-700 dark:text-slate-200 font-bold">
-                          {link.invite_code}
-                        </td>
-                        <td className="py-3.5 px-5">
-                          {link.is_active ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                              Active
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-slate-700">
-                              <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                              Disabled
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-3.5 px-5 font-bold text-slate-900 dark:text-white">
-                          {link.verified_count || 0} students
-                        </td>
-                        <td className="py-3.5 px-5 text-slate-500 dark:text-slate-400">
-                          {new Date(link.created_at).toLocaleDateString()}
-                        </td>
-                        <td className="py-3.5 px-5 text-right space-x-1.5 whitespace-nowrap">
-                          <button
-                            onClick={() => handleToggleLinkActive(link)}
-                            className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition-colors ${
-                              link.is_active 
-                                ? 'text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/50' 
-                                : 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50'
-                            }`}
-                          >
-                            {link.is_active ? 'Disable' : 'Enable'}
-                          </button>
-
-                          <button
-                            onClick={() => requestRevokeUsersForLink(link)}
-                            className="px-2 py-1 rounded-lg text-[10px] font-semibold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors inline-flex items-center gap-1"
-                            title="Revoke access for all students joined via this link"
-                          >
-                            <UserX className="w-3 h-3" />
-                            Revoke ({link.verified_count || 0})
-                          </button>
-
-                          <button
-                            onClick={() => requestDeleteLink(link)}
-                            className="p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 inline-block transition-colors"
-                            title="Delete Link"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {links.length === 0 && (
-                      <tr>
-                        <td colSpan={7} className="py-8 text-center text-slate-400 dark:text-slate-500 text-xs">
-                          No verification links configured yet. Click &quot;+ Add Verification Link&quot; above.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <AdminLinksTable
+              links={links}
+              loading={loading}
+              onAddClick={() => {
+                setLinkError('');
+                setShowAddLinkModal(true);
+              }}
+              onToggleActive={(link) => handleToggleLinkActive(link)}
+              onRevokeUsers={(link) => requestRevokeUsersForLink(link)}
+              onDelete={(link) => requestDeleteLink(link)}
+            />
           </div>
         )}
 
@@ -4250,8 +3890,8 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Recent Downloads Feed */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
-              <div className="p-5 border-b border-slate-100 dark:border-slate-800">
+            <div className="space-y-3">
+              <div>
                 <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
                   Recent Verified File Downloads
                 </h3>
@@ -4260,44 +3900,11 @@ export default function AdminDashboardPage() {
                 </p>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 dark:border-slate-800">
-                    <tr>
-                      <th className="py-3 px-4">Material</th>
-                      <th className="py-3 px-4">Subject</th>
-                      <th className="py-3 px-4">Student</th>
-                      <th className="py-3 px-4">Time</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {(analytics?.recentDownloads || []).map((dld) => (
-                      <tr key={dld.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50">
-                        <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">
-                          {dld.material_title}
-                        </td>
-                        <td className="py-3 px-4 text-slate-600 dark:text-slate-300 font-mono text-[11px]">
-                          {dld.material_subject}
-                        </td>
-                        <td className="py-3 px-4 text-slate-700 dark:text-slate-300">
-                          <div className="font-semibold">{dld.user_name}</div>
-                          <div className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">{dld.user_email}</div>
-                        </td>
-                        <td className="py-3 px-4 text-slate-500 dark:text-slate-400 text-[11px]">
-                          {formatRelativeTime(dld.downloaded_at)}
-                        </td>
-                      </tr>
-                    ))}
-                    {(analytics?.recentDownloads || []).length === 0 && (
-                      <tr>
-                        <td colSpan={4} className="py-8 text-center text-slate-400 dark:text-slate-500 text-xs">
-                          No recent downloads recorded yet.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              <AdminAnalyticsTable
+                downloads={analytics?.recentDownloads || []}
+                loading={!analytics}
+                onRefresh={loadAnalytics}
+              />
             </div>
 
           </div>

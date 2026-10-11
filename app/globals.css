@@ -127,3 +127,72 @@ html.dark .academic-grid-pattern {
     linear-gradient(to right, rgba(51, 65, 85, 0.25) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(51, 65, 85, 0.25) 1px, transparent 1px);
 }
+
+/* ======================================================== */
+/* From Uiverse.io by AlimurtuzaCodes - Custom Glowing Buttons */
+/* ======================================================== */
+.btn, .btn-uiverse {
+  border: none;
+  border-radius: 9999px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  background: #1C1A1C;
+  cursor: pointer;
+  transition: all 450ms cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  text-decoration: none;
+}
+
+.btn .sparkle, .btn-uiverse .sparkle {
+  fill: #AAAAAA;
+  color: #AAAAAA;
+  transition: all 800ms ease;
+}
+
+.btn .text, .btn-uiverse .text {
+  font-weight: 600;
+  color: #AAAAAA;
+  transition: color 450ms ease;
+}
+
+/* Site-related Orange Theme Glow Variant (Default) */
+.btn:hover, .btn-uiverse:hover, .btn-uiverse-orange:hover {
+  background: linear-gradient(0deg, #ea580c, #f97316);
+  box-shadow: inset 0px 1px 0px 0px rgba(255, 255, 255, 0.4),
+    inset 0px -4px 0px 0px rgba(0, 0, 0, 0.2),
+    0px 0px 0px 4px rgba(249, 115, 22, 0.2),
+    0px 0px 60px 0px rgba(249, 115, 22, 0.5);
+  transform: translateY(-2px);
+}
+
+.btn:hover .text, .btn-uiverse:hover .text, .btn-uiverse-orange:hover .text {
+  color: white;
+}
+
+.btn:hover .sparkle, .btn-uiverse:hover .sparkle, .btn-uiverse-orange:hover .sparkle {
+  fill: white;
+  color: white;
+  transform: scale(1.2);
+}
+
+/* Purple Uiverse.io Original Variant */
+.btn-purple:hover, .btn-uiverse-purple:hover {
+  background: linear-gradient(0deg, #A47CF3, #683FEA);
+  box-shadow: inset 0px 1px 0px 0px rgba(255, 255, 255, 0.4),
+    inset 0px -4px 0px 0px rgba(0, 0, 0, 0.2),
+    0px 0px 0px 4px rgba(255, 255, 255, 0.2),
+    0px 0px 120px 0px #9917FF;
+  transform: translateY(-2px);
+}
+
+.btn-purple:hover .text, .btn-uiverse-purple:hover .text {
+  color: white;
+}
+
+.btn-purple:hover .sparkle, .btn-uiverse-purple:hover .sparkle {
+  fill: white;
+  color: white;
+  transform: scale(1.2);
+}
