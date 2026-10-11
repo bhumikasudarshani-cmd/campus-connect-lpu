@@ -5,7 +5,7 @@ import { getUserById, getUserByEmail, upsertUser, isAdmin as checkIsAdmin, getUs
 import { createServerSupabaseClient } from '../supabase/server';
 
 const SECRET_KEY = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'campus_connect_lpu_super_secret_jwt_key_2026_production'
+  process.env.JWT_SECRET || 'cc_lpu_sec_auth_rotated_token_9f82b7c1e4a3d6052841_2026'
 );
 
 export const SESSION_COOKIE_NAME = 'cc_session';
