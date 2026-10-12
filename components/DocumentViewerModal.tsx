@@ -1397,6 +1397,20 @@ export default function DocumentViewerModal({
               </>
             )}
 
+            {/* Open directly in Google Drive */}
+            {driveEmbedUrl && (
+              <a
+                href={driveEmbedUrl.replace('/preview', '/view')}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-1.5 sm:px-2.5 sm:py-1.5 bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 hover:text-orange-300 rounded-xl border border-orange-500/30 transition-all inline-flex items-center gap-1.5 text-xs font-bold"
+                title="Open directly in Google Drive"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Open in Drive</span>
+              </a>
+            )}
+
             {/* Download Button */}
             {canDownload ? (
               <button
@@ -1677,7 +1691,8 @@ export default function DocumentViewerModal({
                     filter: readingFilterStyle,
                     pointerEvents: isPinching ? 'none' : 'auto',
                   }}
-                  sandbox="allow-scripts allow-same-origin allow-forms"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads allow-modals"
+                  allow="autoplay; fullscreen; clipboard-read; clipboard-write"
                 />
               </div>
             </div>
