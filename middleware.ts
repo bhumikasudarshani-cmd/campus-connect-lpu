@@ -73,7 +73,9 @@ export async function middleware(request: NextRequest) {
   }
 
   // Extra Defense-in-depth: Protect all /api/admin endpoints at the edge
-  if (pathname.startsWith('/api/admin')) {
+  // Exempt GET /api/admin/settings so students can read download/community permissions
+  const isReadOnlySettings = pathname === '/api/admin/settings' && request.method === 'GET';
+  if (pathname.startsWith('/api/admin') && !isReadOnlySettings) {
     const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized: Authentication required.' }, { status: 401 });

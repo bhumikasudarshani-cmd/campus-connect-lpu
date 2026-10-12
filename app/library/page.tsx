@@ -49,7 +49,13 @@ function LibraryContent() {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [loading, setLoading] = useState(true);
   const [previewMaterial, setPreviewMaterial] = useState<Material | null>(null);
-  const [allowDownloads, setAllowDownloads] = useState<boolean>(true);
+  const [allowDownloads, setAllowDownloads] = useState<boolean>(() => {
+    if (typeof window !== 'undefined' && document.cookie) {
+      if (document.cookie.includes('cc_allow_dl=false')) return false;
+      if (document.cookie.includes('cc_allow_dl=true')) return true;
+    }
+    return false;
+  });
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   // Student Feedback & Request Modal state
@@ -75,10 +81,10 @@ function LibraryContent() {
   useEffect(() => {
     async function fetchSettings() {
       try {
-        const res = await fetch('/api/admin/settings');
+        const res = await fetch('/api/settings', { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
-          if (data.settings) {
+          if (data.settings && typeof data.settings.allow_user_downloads === 'boolean') {
             setAllowDownloads(data.settings.allow_user_downloads);
           }
           if (typeof data.isAdmin === 'boolean') {
@@ -618,6 +624,10 @@ function LibraryContent() {
         allowDownloads={allowDownloads}
         isAdminOrOwner={isAdmin}
         onDownload={(mat) => {
+          if (!allowDownloads && !isAdmin) {
+            alert('Document downloads are currently disabled by administration. You can view this document in Preview mode.');
+            return;
+          }
           const dlEndpoint = `/api/materials/${mat.id}/download`;
           const link = document.createElement('a');
           link.href = dlEndpoint;

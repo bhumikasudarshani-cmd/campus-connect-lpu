@@ -329,6 +329,9 @@ export function isMaterialPreviewable(material: {
     const driveId = extractDriveFileId(material.file_url);
     return Boolean(driveId);
   }
+  // Any Google Drive file (including Word docs / slides) can be previewed via Google Drive embed!
+  const driveId = extractDriveFileId(material.file_url);
+  if (driveId && !isGoogleDriveFolder(material.file_url)) return true;
   return false;
 }
 

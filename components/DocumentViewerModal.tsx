@@ -442,6 +442,7 @@ export default function DocumentViewerModal({
       if (document.cookie.includes('cc_allow_dl=false')) return false;
       if (document.cookie.includes('cc_allow_dl=true')) return true;
     }
+    if (allowDownloads === false) return false;
     return null;
   });
 
@@ -449,7 +450,10 @@ export default function DocumentViewerModal({
     let isMounted = true;
     async function syncGlobalSettings() {
       try {
-        const res = await fetch('/api/admin/settings', { cache: 'no-store' });
+        let res = await fetch('/api/settings', { cache: 'no-store' });
+        if (!res.ok) {
+          res = await fetch('/api/admin/settings', { cache: 'no-store' });
+        }
         if (res.ok) {
           const data = await res.json();
           if (isMounted && data.settings && typeof data.settings.allow_user_downloads === 'boolean') {
@@ -501,10 +505,9 @@ export default function DocumentViewerModal({
       file_size: activeFileSizeStr,
     });
     if (cat === 'PDF' || cat === 'IMAGE') return true;
-    if (cat === 'PPT') {
-      const driveId = activeFile?.drive_file_id || extractDriveId(activeFileUrl || material.file_url);
-      return Boolean(driveId || driveEmbedUrl);
-    }
+    const driveId = activeFile?.drive_file_id || extractDriveId(activeFileUrl || material.file_url);
+    if (driveId && !isGoogleDriveFolder(activeFileUrl || material.file_url)) return true;
+    if (driveEmbedUrl) return true;
     return false;
   }, [material, isArchiveType, activeFileName, activeFileUrl, activeFileSizeStr, activeFile?.drive_file_id, extractDriveId, driveEmbedUrl]);
 
@@ -530,7 +533,7 @@ export default function DocumentViewerModal({
       e.preventDefault();
     }
     if (!material) return;
-    if (!canDownload && isPreviewable) return;
+    if (!canDownload) return;
 
     if (onDownload) {
       try {
@@ -783,10 +786,10 @@ export default function DocumentViewerModal({
     setTotalPages(1);
 
     const loadDocument = async () => {
-      try {
-        const targetUrl = activeFileUrl || material.file_url || '';
-        const driveId = activeFile?.drive_file_id || extractDriveId(targetUrl);
+      const targetUrl = activeFileUrl || material.file_url || '';
+      const driveId = activeFile?.drive_file_id || extractDriveId(targetUrl);
 
+      try {
         const category = getMaterialCategory({
           file_url: targetUrl,
           file_name: activeFileName,
@@ -808,8 +811,8 @@ export default function DocumentViewerModal({
           return;
         }
 
-        // 2. PPT / PPTX: Presentation slides
-        if (category === 'PPT') {
+        // 2. PPT / PPTX or other Google Drive documents (Docs, Slides, etc.)
+        if (category === 'PPT' || (category === 'OTHER' && driveId)) {
           clearTimeout(timeoutId);
           if (driveId) {
             setDriveEmbedUrl(getDrivePreviewUrl(driveId));
@@ -842,7 +845,7 @@ export default function DocumentViewerModal({
           return;
         }
 
-        // 4. PDFs: Stream and render via PDF.js Canvas
+        // 5. PDFs: Stream and render via PDF.js Canvas
         const cached = getCachedDoc(currentDocKey);
         let arrayBuffer: ArrayBuffer;
         let contentType = '';
@@ -868,6 +871,12 @@ export default function DocumentViewerModal({
           if (isCancelled) return;
 
           if (!response.ok) {
+            if (driveId) {
+              setDriveEmbedUrl(getDrivePreviewUrl(driveId));
+              lastLoadedKeyRef.current = currentDocKey;
+              setLoading(false);
+              return;
+            }
             throw new Error(`Failed to load document: HTTP ${response.status}`);
           }
 
@@ -881,11 +890,18 @@ export default function DocumentViewerModal({
         // Inspect magic bytes: detect if file is actually an archive or container
         const uint8 = new Uint8Array(arrayBuffer.slice(0, 8));
         const isPdfMagic = uint8[0] === 0x25 && uint8[1] === 0x50 && uint8[2] === 0x44 && uint8[3] === 0x46; // %PDF
-        const isZipMagic = uint8[0] === 0x50 && uint8[1] === 0x4B; // PK (ZIP / Office)
+        const isZipMagic = uint8[0] === 0x50 && uint8[1] === 0x4B; // PK (ZIP / Office docx)
         const isRarMagic = uint8[0] === 0x52 && uint8[1] === 0x61 && uint8[2] === 0x72; // Rar!
         const is7zMagic = uint8[0] === 0x37 && uint8[1] === 0x7A && uint8[2] === 0xBC; // 7z
 
         if (isZipMagic || isRarMagic || is7zMagic || (!isPdfMagic && !contentType.includes('pdf'))) {
+          const isGenuineArchive = /\.(zip|rar|7z|tar|gz|bz2)$/i.test(activeFileName);
+          if (driveId && !isGenuineArchive) {
+            setDriveEmbedUrl(getDrivePreviewUrl(driveId));
+            lastLoadedKeyRef.current = currentDocKey;
+            setLoading(false);
+            return;
+          }
           setIsArchiveType(true);
           lastLoadedKeyRef.current = currentDocKey;
           setLoading(false);
@@ -928,6 +944,12 @@ export default function DocumentViewerModal({
           return;
         } catch (pdfErr) {
           console.warn('PDF.js binary decode notice:', pdfErr);
+          if (driveId) {
+            setDriveEmbedUrl(getDrivePreviewUrl(driveId));
+            lastLoadedKeyRef.current = currentDocKey;
+            setLoading(false);
+            return;
+          }
           setError('Could not decode document preview.');
           setLoading(false);
           return;
@@ -935,6 +957,13 @@ export default function DocumentViewerModal({
       } catch (err: any) {
         clearTimeout(timeoutId);
         if (isCancelled) return;
+
+        if (driveId) {
+          setDriveEmbedUrl(getDrivePreviewUrl(driveId));
+          lastLoadedKeyRef.current = currentDocKey;
+          setLoading(false);
+          return;
+        }
 
         console.error('Error loading document preview:', err);
         const isTimeout = err?.name === 'AbortError';
@@ -1490,13 +1519,25 @@ export default function DocumentViewerModal({
                   </span>
                 )}
               </div>
-              <button
-                onClick={handleDownloadActiveFile}
-                className="btn w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full font-bold text-sm shadow-xl cursor-pointer group"
-              >
-                <Download className="sparkle w-4 h-4 text-orange-400" />
-                <span className="text">Download File ({activeFileSizeStr || fileFormat.label})</span>
-              </button>
+              {canDownload ? (
+                <button
+                  onClick={handleDownloadActiveFile}
+                  className="btn w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full font-bold text-sm shadow-xl cursor-pointer group"
+                >
+                  <Download className="sparkle w-4 h-4 text-orange-400" />
+                  <span className="text">Download File ({activeFileSizeStr || fileFormat.label})</span>
+                </button>
+              ) : (
+                <div className="bg-amber-950/40 border border-amber-800/60 rounded-2xl p-4 text-center">
+                  <div className="inline-flex items-center justify-center gap-1.5 text-amber-400 font-semibold text-xs mb-1">
+                    <ShieldAlert className="w-4 h-4" />
+                    Downloads Temporarily Disabled
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    Document downloads are currently restricted by administration. Preview is enabled for supported viewing formats.
+                  </p>
+                </div>
+              )}
             </div>
           ) : externalLinkUrl ? (
             <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 sm:p-12 max-w-lg text-center mx-auto my-auto shadow-2xl animate-in zoom-in-95 duration-200">

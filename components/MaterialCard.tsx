@@ -98,6 +98,10 @@ export default function MaterialCard({
 
   const handleDownload = async (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    if (!canDownload) {
+      if (onPreview) onPreview(material);
+      return;
+    }
     if (downloading) return;
 
     setDownloading(true);
