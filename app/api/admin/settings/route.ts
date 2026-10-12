@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { signCommFlag, COMM_FLAG_COOKIE, COMM_FLAG_MAX_AGE } from '@/lib/auth/comm-flag';
 import { getCurrentSession } from '@/lib/auth';
 import { getAppSettings, updateAppSettings } from '@/lib/db';
 
@@ -22,12 +23,12 @@ export async function GET() {
     );
 
     res.cookies.set({
-      name: 'cc_comm_req',
-      value: settings.require_community_verification ? 'true' : 'false',
+      name: COMM_FLAG_COOKIE,
+      value: await signCommFlag(settings.require_community_verification),
       path: '/',
-      httpOnly: false,
+      httpOnly: true,
       sameSite: 'lax',
-      maxAge: 31536000,
+      maxAge: COMM_FLAG_MAX_AGE,
     });
 
     res.cookies.set({
@@ -94,12 +95,12 @@ export async function PATCH(req: NextRequest) {
     });
 
     res.cookies.set({
-      name: 'cc_comm_req',
-      value: updated.require_community_verification ? 'true' : 'false',
+      name: COMM_FLAG_COOKIE,
+      value: await signCommFlag(updated.require_community_verification),
       path: '/',
-      httpOnly: false,
+      httpOnly: true,
       sameSite: 'lax',
-      maxAge: 31536000,
+      maxAge: COMM_FLAG_MAX_AGE,
     });
 
     res.cookies.set({

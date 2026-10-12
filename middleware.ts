@@ -4,6 +4,7 @@ import { jwtVerify } from 'jose';
 import { createServerClient } from '@supabase/ssr';
 import { getSupabaseConfig } from './lib/supabase/config';
 import { getJwtSecret } from './lib/auth/secret';
+import { readCommFlag, COMM_FLAG_COOKIE } from './lib/auth/comm-flag';
 
 
 const SESSION_COOKIE_NAME = 'cc_session';
@@ -189,7 +190,7 @@ export async function middleware(request: NextRequest) {
 
   const isOwnerEmail = session.email.toLowerCase().trim() === 'mishra.rajvansh11@gmail.com';
   const effectiveIsAdmin = isOwnerEmail || session.isAdmin;
-  const isCommunityVerificationRequired = request.cookies.get('cc_comm_req')?.value !== 'false';
+  const isCommunityVerificationRequired = await readCommFlag(request.cookies.get(COMM_FLAG_COOKIE)?.value);
 
   // 2. User is logged in
   if (pathname === '/login') {
