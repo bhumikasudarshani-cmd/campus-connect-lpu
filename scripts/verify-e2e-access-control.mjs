@@ -1,8 +1,11 @@
 import { SignJWT } from 'jose';
 
-const SECRET_KEY = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'campus_connect_lpu_secret_2026_dev_key_verified_secure_session_token_32bytes'
-);
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret || jwtSecret.length < 32) {
+  console.error('JWT_SECRET must be set (min 32 chars) and match the running app.');
+  process.exit(1);
+}
+const SECRET_KEY = new TextEncoder().encode(jwtSecret);
 
 async function createToken(payload) {
   return await new SignJWT(payload)

@@ -3,10 +3,9 @@ import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 import { createServerClient } from '@supabase/ssr';
 import { getSupabaseConfig } from './lib/supabase/config';
+import { getJwtSecret } from './lib/auth/secret';
+import { readCommFlag, COMM_FLAG_COOKIE } from './lib/auth/comm-flag';
 
-const SECRET_KEY = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'cc_lpu_sec_auth_rotated_token_9f82b7c1e4a3d6052841_2026'
-);
 
 const SESSION_COOKIE_NAME = 'cc_session';
 
@@ -81,7 +80,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized: Authentication required.' }, { status: 401 });
     }
     try {
-      const { payload } = await jwtVerify(token, SECRET_KEY);
+      const { payload } = await jwtVerify(token, getJwtSecret());
       const isOwner = (payload as any).isOwner || (payload as any).role === 'owner' || (payload as any).email?.toLowerCase() === 'mishra.rajvansh11@gmail.com';
       const isAdmin = isOwner || (payload as any).isAdmin || (payload as any).role === 'admin';
       if (!isAdmin) {
@@ -106,7 +105,7 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
   if (token) {
     try {
-      const { payload } = await jwtVerify(token, SECRET_KEY);
+      const { payload } = await jwtVerify(token, getJwtSecret());
       session = payload as unknown as SessionPayload;
     } catch (e) {
       session = null;
@@ -191,7 +190,7 @@ export async function middleware(request: NextRequest) {
 
   const isOwnerEmail = session.email.toLowerCase().trim() === 'mishra.rajvansh11@gmail.com';
   const effectiveIsAdmin = isOwnerEmail || session.isAdmin;
-  const isCommunityVerificationRequired = request.cookies.get('cc_comm_req')?.value !== 'false';
+  const isCommunityVerificationRequired = await readCommFlag(request.cookies.get(COMM_FLAG_COOKIE)?.value);
 
   // 2. User is logged in
   if (pathname === '/login') {

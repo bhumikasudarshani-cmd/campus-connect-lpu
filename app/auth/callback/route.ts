@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { signCommFlag, COMM_FLAG_COOKIE, COMM_FLAG_MAX_AGE } from '@/lib/auth/comm-flag';
 import { createServerClient } from '@supabase/ssr';
 import { getSupabaseConfig } from '@/lib/supabase/config';
 import { upsertUser, isAdmin as checkIsAdmin, getUserRole, getAppSettings } from '@/lib/db';
@@ -125,12 +126,12 @@ export async function GET(request: NextRequest) {
         const response = NextResponse.redirect(new URL(destination, origin));
 
         response.cookies.set({
-          name: 'cc_comm_req',
-          value: requireCommunity ? 'true' : 'false',
+          name: COMM_FLAG_COOKIE,
+          value: await signCommFlag(requireCommunity),
           path: '/',
-          httpOnly: false,
+          httpOnly: true,
           sameSite: 'lax',
-          maxAge: 31536000,
+          maxAge: COMM_FLAG_MAX_AGE,
         });
 
         // CRITICAL: Propagate all Supabase SSR session cookies to the redirect response!
