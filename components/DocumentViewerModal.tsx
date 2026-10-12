@@ -495,6 +495,7 @@ export default function DocumentViewerModal({
 
   const isPreviewable = useMemo(() => {
     if (!material) return true;
+    if (externalLinkUrl || isDriveResource) return true;
     if (isArchiveType) return false;
     const cat = getMaterialCategory({
       file_name: activeFileName,
@@ -504,12 +505,12 @@ export default function DocumentViewerModal({
       material_type: material.material_type,
       file_size: activeFileSizeStr,
     });
-    if (cat === 'PDF' || cat === 'IMAGE') return true;
+    if (cat === 'PDF' || cat === 'IMAGE' || cat === 'EXTERNAL_LINK') return true;
     const driveId = activeFile?.drive_file_id || extractDriveId(activeFileUrl || material.file_url);
     if (driveId && !isGoogleDriveFolder(activeFileUrl || material.file_url)) return true;
     if (driveEmbedUrl) return true;
     return false;
-  }, [material, isArchiveType, activeFileName, activeFileUrl, activeFileSizeStr, activeFile?.drive_file_id, extractDriveId, driveEmbedUrl]);
+  }, [material, externalLinkUrl, isDriveResource, isArchiveType, activeFileName, activeFileUrl, activeFileSizeStr, activeFile?.drive_file_id, extractDriveId, driveEmbedUrl]);
 
   const fileFormat = useMemo(() => {
     return material ? getMaterialFileFormat({
@@ -1427,42 +1428,37 @@ export default function DocumentViewerModal({
               <Layers className="w-3.5 h-3.5 text-amber-500" />
               Parts ({multiFiles.length}):
             </span>
-            {multiFiles.map((file, idx) => (
-              <button
-                key={idx}
-                onClick={() => {
-                  if (activeFileIndex !== idx) {
-                    setActiveFileIndex(idx);
-                    setCurrentPage(1);
-                    setLoading(true);
-                    setError(null);
-                  }
-                  const isPartLink = file.url && (
-                    file.size === 'Google Drive' || 
-                    file.size === 'Resource Link' || 
-                    file.url.includes('/folders/')
-                  );
-                  if (isPartLink && canDownload) {
-                    window.open(file.url, '_blank', 'noopener,noreferrer');
-                  }
-                }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 select-none ${
-                  activeFileIndex === idx
-                    ? 'bg-gradient-to-r from-lpu-600 to-amber-500 text-white shadow-md shadow-orange-500/20'
-                    : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700/60'
-                }`}
-              >
-                <FileText className="w-3.5 h-3.5" />
-                <span className="truncate max-w-[150px] sm:max-w-[220px]">
-                  {file.title || file.name || `File ${idx + 1}`}
-                </span>
-                {file.size && (
-                  <span className="text-[10px] opacity-75 font-mono">
-                    ({file.size})
+            {multiFiles.map((file, idx) => {
+              const isLink = file.url && (file.url.startsWith('http') && !file.url.includes('/api/materials/'));
+              return (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    if (activeFileIndex !== idx) {
+                      setActiveFileIndex(idx);
+                      setCurrentPage(1);
+                      setLoading(true);
+                      setError(null);
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 select-none cursor-pointer ${
+                    activeFileIndex === idx
+                      ? 'bg-gradient-to-r from-lpu-600 to-amber-500 text-white shadow-md shadow-orange-500/20'
+                      : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700/60'
+                  }`}
+                >
+                  {isLink ? <ExternalLink className="w-3.5 h-3.5" /> : <FileText className="w-3.5 h-3.5" />}
+                  <span className="truncate max-w-[150px] sm:max-w-[220px]">
+                    {file.title || file.name || `Part ${idx + 1}`}
                   </span>
-                )}
-              </button>
-            ))}
+                  {file.size && (
+                    <span className="text-[10px] opacity-75 font-mono">
+                      ({file.size})
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         )}
 
@@ -1480,6 +1476,64 @@ export default function DocumentViewerModal({
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-slate-400">
               <div className="w-10 h-10 border-4 border-lpu-500 border-t-transparent rounded-full animate-spin mb-3" />
               <p className="text-xs font-semibold">Loading document inside viewer...</p>
+            </div>
+          ) : externalLinkUrl ? (
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 sm:p-12 max-w-lg text-center mx-auto my-auto shadow-2xl animate-in zoom-in-95 duration-200">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-500/20 to-orange-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-orange-500/10">
+                <Globe className="w-8 h-8 text-amber-400" />
+              </div>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 text-[11px] font-bold text-amber-400 border border-slate-700 mb-3">
+                {multiFiles.length > 1 ? `External Study Resource (Part ${activeFileIndex + 1} of ${multiFiles.length})` : 'External Study Resource'}
+              </span>
+              <h3 className="text-lg sm:text-xl font-bold text-white mb-2 leading-snug">
+                {activeFileName || material.title}
+              </h3>
+              <p className="text-xs text-slate-400 mb-6 max-w-sm mx-auto leading-relaxed">
+                {material.description || 'This study resource is accessible directly via the external link below.'}
+              </p>
+              <div className="bg-slate-950/80 rounded-2xl p-3 border border-slate-800 mb-6 flex items-center justify-center gap-2 text-center overflow-hidden">
+                <span className="truncate text-xs font-mono text-slate-300 max-w-xs">
+                  {externalLinkUrl}
+                </span>
+              </div>
+              <a
+                href={externalLinkUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full font-bold text-sm shadow-xl cursor-pointer group"
+              >
+                <span className="text">Open Resource Link</span>
+                <ExternalLink className="sparkle w-4 h-4 text-orange-400" />
+              </a>
+            </div>
+          ) : isDriveResource ? (
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 sm:p-12 max-w-xl text-center mx-auto my-auto shadow-2xl animate-in zoom-in-95 duration-200">
+              <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-amber-500/10">
+                <ExternalLink className="w-8 h-8 text-amber-400" />
+              </div>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-950/80 text-[11px] font-bold text-amber-300 border border-amber-800 mb-3">
+                Google Drive Folder
+              </span>
+              <h3 className="text-lg sm:text-xl font-bold text-white mb-2 leading-snug">
+                {activeFileName || material.title}
+              </h3>
+              <p className="text-xs text-slate-400 mb-6 max-w-md mx-auto leading-relaxed">
+                Google Drive folders cannot be previewed in-app. Open in Google Drive to view all files, notes, and folders.
+              </p>
+              <div className="bg-slate-950/80 rounded-2xl p-3 border border-slate-800 mb-6 flex items-center justify-center gap-2 text-center overflow-hidden">
+                <span className="truncate text-xs font-mono text-slate-300 max-w-xs">
+                  {externalLinkUrl || material.file_url}
+                </span>
+              </div>
+              <a
+                href={externalLinkUrl || material.file_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full font-bold text-sm shadow-xl cursor-pointer group"
+              >
+                <span className="text">Open Google Drive</span>
+                <ExternalLink className="sparkle w-4 h-4 text-orange-400" />
+              </a>
             </div>
           ) : !isPreviewable ? (
             <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 sm:p-12 max-w-lg text-center mx-auto my-auto shadow-2xl animate-in zoom-in-95 duration-200">
@@ -1538,69 +1592,6 @@ export default function DocumentViewerModal({
                   </p>
                 </div>
               )}
-            </div>
-          ) : externalLinkUrl ? (
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 sm:p-12 max-w-lg text-center mx-auto my-auto shadow-2xl animate-in zoom-in-95 duration-200">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-500/20 to-orange-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-orange-500/10">
-                <Globe className="w-8 h-8 text-amber-400" />
-              </div>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 text-[11px] font-bold text-amber-400 border border-slate-700 mb-3">
-                External Study Resource
-              </span>
-              <h3 className="text-lg sm:text-xl font-bold text-white mb-2 leading-snug">
-                {material.title}
-              </h3>
-              <p className="text-xs text-slate-400 mb-6 max-w-sm mx-auto leading-relaxed">
-                {material.description || 'This study resource is accessible directly via the external link below.'}
-              </p>
-              <div className="bg-slate-950/80 rounded-2xl p-3 border border-slate-800 mb-6 flex items-center justify-center gap-2 text-center overflow-hidden">
-                <span className="truncate text-xs font-mono text-slate-300 max-w-xs">
-                  {externalLinkUrl}
-                </span>
-              </div>
-              <a
-                href={externalLinkUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full font-bold text-sm shadow-xl cursor-pointer group"
-              >
-                <span className="text">Open Resource Link</span>
-                <ExternalLink className="sparkle w-4 h-4 text-orange-400" />
-              </a>
-            </div>
-          ) : isDriveResource ? (
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 sm:p-12 max-w-xl text-center mx-auto my-auto shadow-2xl animate-in zoom-in-95 duration-200">
-              <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-amber-500/10">
-                <ExternalLink className="w-8 h-8 text-amber-400" />
-              </div>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-950/80 text-[11px] font-bold text-amber-300 border border-amber-800 mb-3">
-                Google Drive Folder
-              </span>
-              <h3 className="text-lg sm:text-xl font-bold text-white mb-2 leading-snug">
-                {activeFileName || material.title}
-              </h3>
-              <p className="text-xs text-slate-400 mb-6 max-w-md mx-auto leading-relaxed">
-                Google Drive folders cannot be previewed in-app. Open in Google Drive to view all files, notes, and folders.
-              </p>
-              
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                <a
-                  href={activeFileUrl || material.file_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => {
-                    fetch('/api/materials/history', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ materialId: material.id }),
-                    }).catch(() => {});
-                  }}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-lpu-600 to-amber-500 hover:from-lpu-700 hover:to-amber-600 text-white font-bold text-sm shadow-xl shadow-orange-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  <span>Open in Google Drive (New Tab)</span>
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-              </div>
             </div>
           ) : error ? (
             <div className="bg-slate-800/80 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-md text-center mx-auto my-auto shadow-2xl animate-in zoom-in-95 duration-200">

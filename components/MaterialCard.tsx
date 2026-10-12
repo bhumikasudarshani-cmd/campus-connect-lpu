@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Download, 
   FileText, 
@@ -166,8 +166,35 @@ export default function MaterialCard({
   };
 
 
+  const bundleItems = useMemo(() => {
+    if (!material.file_url?.startsWith('[')) return [];
+    try {
+      const arr = JSON.parse(material.file_url);
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
+  }, [material.file_url]);
+
   const handleOpenDirectLink = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
+    let target = url;
+    if (url.startsWith('[')) {
+      try {
+        const arr = JSON.parse(url);
+        if (Array.isArray(arr) && arr.length > 0) {
+          if (arr.length > 1 && onPreview) {
+            onPreview(material);
+            return;
+          }
+          target = arr[0]?.url || url;
+        }
+      } catch {}
+    }
+    if (!target || !target.startsWith('http')) {
+      if (onPreview) onPreview(material);
+      return;
+    }
+    window.open(target, '_blank', 'noopener,noreferrer');
     fetch('/api/materials/history', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -196,20 +223,12 @@ export default function MaterialCard({
             <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-0.8 rounded-md shadow-2xs shrink-0">
               {formatYearName(material.year)}
             </span>
-            {material.file_url?.startsWith('[') && (() => {
-              try {
-                const arr = JSON.parse(material.file_url);
-                if (Array.isArray(arr) && arr.length > 1) {
-                  return (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 border border-amber-200/90 dark:border-amber-800/80 px-2 py-0.8 rounded-md shrink-0">
-                      <Layers className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                      {arr.length} PDFs
-                    </span>
-                  );
-                }
-              } catch {}
-              return null;
-            })()}
+            {bundleItems.length > 1 && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 border border-amber-200/90 dark:border-amber-800/80 px-2 py-0.8 rounded-md shrink-0">
+                <Layers className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                {bundleItems.length} {isExternalLink ? 'Links' : 'Parts'}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0 max-w-[45%]">
@@ -283,14 +302,25 @@ export default function MaterialCard({
 
         <div className="grid grid-cols-2 gap-2">
           {isExternalLink ? (
-            <button
-              onClick={() => handleOpenDirectLink(material.file_url)}
-              type="button"
-              className="btn col-span-2 w-full py-2.5 px-3 rounded-xl text-xs font-bold shadow-xs cursor-pointer"
-            >
-              <ExternalLink className="sparkle w-3.5 h-3.5 text-amber-500" />
-              <span className="text">{isDriveFolder ? 'Open in Google Drive' : 'Open in New Tab'}</span>
-            </button>
+            bundleItems.length > 1 ? (
+              <button
+                onClick={() => onPreview && onPreview(material)}
+                type="button"
+                className="btn col-span-2 w-full py-2.5 px-3 rounded-xl text-xs font-bold shadow-xs cursor-pointer"
+              >
+                <Layers className="sparkle w-3.5 h-3.5 text-amber-500" />
+                <span className="text">View {bundleItems.length} Links</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => handleOpenDirectLink(bundleItems[0]?.url || material.file_url)}
+                type="button"
+                className="btn col-span-2 w-full py-2.5 px-3 rounded-xl text-xs font-bold shadow-xs cursor-pointer"
+              >
+                <ExternalLink className="sparkle w-3.5 h-3.5 text-amber-500" />
+                <span className="text">{isDriveFolder ? 'Open in Google Drive' : 'Open in New Tab'}</span>
+              </button>
+            )
           ) : isPreviewableFormat ? (
             canDownload ? (
               <>
