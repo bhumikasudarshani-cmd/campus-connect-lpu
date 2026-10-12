@@ -3,10 +3,8 @@ import { cookies } from 'next/headers';
 import { User } from '../db/types';
 import { getUserById, getUserByEmail, upsertUser, isAdmin as checkIsAdmin, getUserRole, isOwner as checkIsOwner, touchUserActivity } from '../db';
 import { createServerSupabaseClient } from '../supabase/server';
+import { getJwtSecret } from './secret';
 
-const SECRET_KEY = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'cc_lpu_sec_auth_rotated_token_9f82b7c1e4a3d6052841_2026'
-);
 
 export const SESSION_COOKIE_NAME = 'cc_session';
 
@@ -44,12 +42,12 @@ export async function signSession(user: User, isAdminUser: boolean, role?: 'owne
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('30d')
-    .sign(SECRET_KEY);
+    .sign(getJwtSecret());
 }
 
 export async function verifySession(token: string): Promise<SessionPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, SECRET_KEY);
+    const { payload } = await jwtVerify(token, getJwtSecret());
     return payload as unknown as SessionPayload;
   } catch (err) {
     return null;
