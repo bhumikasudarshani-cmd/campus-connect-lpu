@@ -9,77 +9,6 @@ import {
   getDriveDirectDownloadUrl,
 } from '@/lib/drive-service';
 
-async function fetchGoogleDriveFileStream(driveId: string): Promise<{
-  stream: ReadableStream<Uint8Array>;
-  contentType: string;
-  contentLength: string | null;
-} | null> {
-  const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
-
-  // Strategy 1: drive.usercontent.google.com direct download
-  const directUrl = `https://drive.usercontent.google.com/download?id=${driveId}&export=download`;
-  let driveRes = await fetch(directUrl, {
-    headers: { 'User-Agent': userAgent },
-  });
-
-  // Strategy 2: drive.google.com/uc?export=download if direct fails or returned HTML
-  if (!driveRes.ok || driveRes.headers.get('content-type')?.includes('text/html')) {
-    const ucUrl = `https://drive.google.com/uc?export=download&id=${driveId}`;
-    driveRes = await fetch(ucUrl, {
-      headers: { 'User-Agent': userAgent },
-    });
-
-    const ct = driveRes.headers.get('content-type') || '';
-    if (driveRes.ok && ct.includes('text/html')) {
-      const setCookies = driveRes.headers.get('set-cookie') || '';
-      const html = await driveRes.text();
-
-      let confirmUrl: string | null = null;
-      const formActionMatch = html.match(/id="download-form"[^>]*action="([^"]+)"/);
-      if (formActionMatch) {
-        const action = formActionMatch[1].replace(/&amp;/g, '&');
-        const urlObj = new URL(action, 'https://drive.usercontent.google.com');
-        const inputs = Array.from(html.matchAll(/<input[^>]+name="([^"]+)"[^>]+value="([^"]+)"/g));
-        for (const input of inputs) {
-          urlObj.searchParams.set(input[1], input[2]);
-        }
-        confirmUrl = urlObj.toString();
-      } else {
-        const linkMatch = html.match(/id="uc-download-link"[^>]*href="([^"]+)"/);
-        if (linkMatch) {
-          const href = linkMatch[1].replace(/&amp;/g, '&');
-          confirmUrl = href.startsWith('http') ? href : `https://drive.google.com${href}`;
-        } else {
-          const confirmMatch = html.match(/confirm=([a-zA-Z0-9_-]+)/);
-          const uuidMatch = html.match(/uuid=([a-zA-Z0-9_-]+)/);
-          if (confirmMatch) {
-            confirmUrl = `https://drive.usercontent.google.com/download?id=${driveId}&export=download&confirm=${confirmMatch[1]}${uuidMatch ? `&uuid=${uuidMatch[1]}` : ''}`;
-          }
-        }
-      }
-
-      if (confirmUrl) {
-        const headers: Record<string, string> = { 'User-Agent': userAgent };
-        if (setCookies) {
-          headers['Cookie'] = setCookies;
-        }
-        driveRes = await fetch(confirmUrl, { headers });
-      }
-    }
-  }
-
-  const finalCt = driveRes.headers.get('content-type') || '';
-  if (!driveRes.ok || finalCt.includes('text/html') || !driveRes.body) {
-    return null;
-  }
-
-  return {
-    stream: driveRes.body as ReadableStream<Uint8Array>,
-    contentType: finalCt,
-    contentLength: driveRes.headers.get('content-length'),
-  };
-}
-
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await getCurrentSession();
@@ -138,10 +67,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     // 0. If stored in Google Drive
     const driveId = extractDriveFileId(targetFileUrl);
     if (driveId) {
+      const drivePreview = getDrivePreviewUrl(driveId);
       if (returnSignedUrl) {
         return NextResponse.json({
           success: true,
-          signedUrl: targetFileUrl,
+          signedUrl: drivePreview,
           driveFileId: driveId,
           isGoogleDrive: true,
           material: {
@@ -152,36 +82,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         });
       }
 
-      try {
-        const driveData = await fetchGoogleDriveFileStream(driveId);
-        if (driveData) {
-          const contentType = driveData.contentType.includes('pdf')
-            ? 'application/pdf'
-            : driveData.contentType;
-
-          const responseHeaders: Record<string, string> = {
-            'Content-Type': contentType,
-            'Accept-Ranges': 'bytes',
-            'Cache-Control': 'private, max-age=3600',
-          };
-          if (driveData.contentLength) {
-            responseHeaders['Content-Length'] = driveData.contentLength;
-          }
-
-          return new NextResponse(driveData.stream, {
-            status: 200,
-            headers: responseHeaders,
-          });
-        }
-      } catch (streamErr) {
-        console.warn('Google Drive direct stream error:', streamErr);
-      }
-
-      // If streaming fails, return 502 error instead of redirecting to Google Drive preview HTML
-      return NextResponse.json(
-        { error: 'Failed to stream document from Google Drive' },
-        { status: 502 }
-      );
+      // Direct 307 Redirect to Google Drive preview CDN.
+      // Google CDN handles 100% of the bandwidth at ZERO Vercel Fast Origin cost!
+      return NextResponse.redirect(drivePreview, 307);
     }
 
     // 1. If stored in Supabase Storage

@@ -812,12 +812,12 @@ export default function DocumentViewerModal({
           return;
         }
 
-        // 2. PPT / PPTX or other Google Drive documents (Docs, Slides, etc.)
-        if (category === 'PPT' || (category === 'OTHER' && driveId)) {
+        // 2. Google Drive resources (PDF, PPT, Docs, Archives, etc.):
+        // Use Google's official embed preview directly.
+        // Google CDN handles 100% of bandwidth at ZERO Vercel Fast Origin cost!
+        if (driveId) {
           clearTimeout(timeoutId);
-          if (driveId) {
-            setDriveEmbedUrl(getDrivePreviewUrl(driveId));
-          }
+          setDriveEmbedUrl(getDrivePreviewUrl(driveId));
           lastLoadedKeyRef.current = currentDocKey;
           setLoading(false);
           return;
