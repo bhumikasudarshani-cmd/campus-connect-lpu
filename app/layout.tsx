@@ -4,6 +4,15 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import PwaInstallPrompt from '@/components/PwaInstallPrompt';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { 
+  getBaseUrl, 
+  DEFAULT_TITLE, 
+  DEFAULT_DESCRIPTION, 
+  PRIMARY_KEYWORDS, 
+  SITE_NAME,
+  getWebsiteJsonLd,
+  getOrganizationJsonLd
+} from '@/lib/seo';
 
 export const viewport: Viewport = {
   themeColor: '#ea580c',
@@ -13,11 +22,58 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
+const baseUrl = getBaseUrl();
+
 export const metadata: Metadata = {
-  title: 'Campus Connect LPU – Centralized Study Material Hub',
-  description: 'Your one-stop academic library for Lovely Professional University. Access subject notes, solved mid-term & end-term papers, and previous year questions (PYQs).',
-  keywords: 'LPU, Campus Connect, LPU study material, Lovely Professional University, CSE101 notes, LPU pyqs, mid term papers, end term papers',
+  metadataBase: new URL(baseUrl),
+  title: {
+    default: DEFAULT_TITLE,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: DEFAULT_DESCRIPTION,
+  keywords: PRIMARY_KEYWORDS,
+  applicationName: SITE_NAME,
+  authors: [{ name: SITE_NAME }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
   manifest: '/manifest.webmanifest',
+  alternates: {
+    canonical: baseUrl,
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: baseUrl,
+    siteName: SITE_NAME,
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+    images: [
+      {
+        url: '/icons/icon-512.png',
+        width: 512,
+        height: 512,
+        alt: DEFAULT_TITLE,
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+    images: ['/icons/icon-512.png'],
+    creator: '@CampusConnectLPU',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -62,6 +118,14 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(getWebsiteJsonLd()) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(getOrganizationJsonLd()) }}
+        />
       </head>
       <body className="min-h-full flex flex-col bg-slate-50 dark:bg-[#0b1120] text-slate-900 dark:text-slate-100 antialiased selection:bg-orange-500 selection:text-white transition-colors duration-150">
         <ThemeProvider>
